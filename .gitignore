@@ -1,0 +1,16 @@
+# IntelliJ IDE
+.idea/
+*.iml
+
+# VS Code IDE
+.vscode/
+
+# NetBeans IDE
+nbproject/
+
+# Compiled class files and build folders (do not push these to Git!)
+out/
+bin/
+target/
+build/
+*.class
