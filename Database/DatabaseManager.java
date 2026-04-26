@@ -7,12 +7,7 @@ import java.sql.Statement;
 public class DatabaseManager {
 
     private static final String DB_NAME = "Masroofy.db";
-    // SQLite database file name
-    // Created automatically in project root on first run
 
-    // ─────────────────────────────────────────
-    // CONNECTION
-    // ─────────────────────────────────────────
 
     public static Connection connect() {
         // Returns a live connection to the SQLite database
@@ -29,9 +24,8 @@ public class DatabaseManager {
         }
     }
 
-    // ─────────────────────────────────────────
+  
     // CREATE TABLES
-    // ─────────────────────────────────────────
 
     public static void createTables() {
         // Called once on app startup from Main.java
@@ -101,7 +95,7 @@ public class DatabaseManager {
             System.out.println("✅ alerts table ready.");
 
         } catch (Exception e) {
-            System.out.println("❌ Error creating tables: " + e.getMessage());
+            System.out.println(" Error creating tables: " + e.getMessage());
         }
     }
 }
