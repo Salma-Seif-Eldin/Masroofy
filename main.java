@@ -1,35 +1,41 @@
-import javax.swing.SwingUtilities;
 import Database.DatabaseManager;
+import javax.swing.*;
+import Controllers.BudgetManager;
+import Views.CycleSetupActivity;
 
 public class Main {
 
     public static void main(String[] args) {
 
+        // Step 1 — Create all database tables
         DatabaseManager.createTables();
-     
+
+        // framework Launch
         SwingUtilities.invokeLater(() -> {
 
-            // ── Member 1 ──
-            Controllers.BudgetManager budgetManager = new Controllers.BudgetManager();
+            // Create shared BudgetManager
+            BudgetManager budgetManager = new BudgetManager();
             budgetManager.loadExistingBudget();
-            // Loads saved cycle and expenses from database on startup
 
-            // ── Temporary test window until all members finish ──
-            javax.swing.JFrame frame = new javax.swing.JFrame("Masroofy — مصروفي");
+            //  main window
+            JFrame frame = new JFrame("Masroofy — مصروفي");
             frame.setSize(800, 600);
-            frame.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLocationRelativeTo(null);
 
-            // Show CycleSetup if no active cycle
-            // Show Dashboard if cycle already exists
+            // Show correct screen based on saved data
             if (budgetManager.getCurrentCycle() == null) {
-                System.out.println("No active cycle — open CycleSetup screen");
-                // Member 4 will replace this with:
-                // frame.add(new Views.CycleSetupPanel(budgetManager, frame));
+                // No saved cycle → show setup form
+                frame.add(new CycleSetupActivity(budgetManager, frame));
             } else {
-                System.out.println("Active cycle found — open Dashboard screen");
-                // Member 4 will replace this with:
-                // frame.add(new Views.DashboardPanel(budgetManager, frame));
+                // Has saved cycle → placeholder for Member 4
+                JLabel placeholder = new JLabel(
+                    "Dashboard — Member 4 will implement this",
+                    SwingConstants.CENTER
+                );
+                placeholder.setFont(new java.awt.Font("Arial",
+                        java.awt.Font.BOLD, 18));
+                frame.add(placeholder);
             }
 
             frame.setVisible(true);
