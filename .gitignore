@@ -1,6 +1,7 @@
 # IntelliJ IDE
 .idea/
 *.iml
+*.jar
 
 # VS Code IDE
 .vscode/
