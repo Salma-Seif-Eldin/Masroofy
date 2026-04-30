@@ -178,4 +178,26 @@ public class CycleDAO {
             return false;
         }
     }
+    /**
+ * MEMBER 1 FILE: CycleDAO.java
+ * Updated by Member 4 (The Glue) to support "Refund" on delete.
+ */
+    public void updateBalance(double refundAmount) {
+        // This SQL adds the refundAmount to the current 'remaining' balance
+        // We target the 'active' cycle (where the ID is the latest or flagged as active)
+        String sql = "UPDATE budget_cycles SET remaining = remaining + ? WHERE id = (SELECT MAX(id) FROM budget_cycles)";
+
+        try (Connection conn = DatabaseManager.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setDouble(1, refundAmount);
+            pstmt.executeUpdate();
+            
+            System.out.println("Balance updated: " + refundAmount + " added back.");
+            
+        } catch (SQLException e) {
+            System.out.println("Error updating balance: " + e.getMessage());
+        }
+    }
+    
 }
