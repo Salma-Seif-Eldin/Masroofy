@@ -9,9 +9,9 @@ import Models.BudgetCycle;
 import Models.Expense;
 import Database.CycleDAO;
 
+
 public class BudgetManager {
 
-   
     private BudgetCycle currentCycle;
     private List<Expense> expenses = new ArrayList<>();//using alist avoids hitting the database on every calculation 
     private CycleDAO cycleDAO = new CycleDAO(); //Database handler 
@@ -180,6 +180,12 @@ public class BudgetManager {
             }
         }
         return todaySpent;
+    }
+    public double recalculateLimits() {
+        // Called after any edit/delete to past expenses
+        // Forces a full recalculation of remaining budget and daily limit
+        // This is necessary because changing past data can affect current/future limits
+        return getRemainingBudget();
     }
 
     
