@@ -1,7 +1,8 @@
-import Database.DatabaseManager;
-import javax.swing.*;
 import Controllers.BudgetManager;
+import Database.DatabaseManager;
 import Views.CycleSetupActivity;
+import Views.DashboardActivity;
+import javax.swing.*;
 
 public class main {
 
@@ -28,14 +29,7 @@ public class main {
                 // No saved cycle → show setup form
                 frame.add(new CycleSetupActivity(budgetManager, frame));
             } else {
-                // Has saved cycle → placeholder for Member 4
-                JLabel placeholder = new JLabel(
-                    "Dashboard — Member 4 will implement this",
-                    SwingConstants.CENTER
-                );
-                placeholder.setFont(new java.awt.Font("Arial",
-                        java.awt.Font.BOLD, 18));
-                frame.add(placeholder);
+                frame.add(new DashboardActivity(budgetManager));
             }
 
             frame.setVisible(true);

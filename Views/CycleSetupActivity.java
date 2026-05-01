@@ -1,10 +1,10 @@
 package Views;
 
-import javax.swing.*;
+import Controllers.BudgetManager;
 import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import Controllers.BudgetManager;
+import javax.swing.*;
 
 public class CycleSetupActivity extends JPanel {
 
@@ -186,16 +186,11 @@ public class CycleSetupActivity extends JPanel {
     //navigation  
 
     private void goBack() {
-        // Goes back to dashboard after saving
-        // Other member will replace this placeholder
-        mainFrame.getContentPane().removeAll();
-        JLabel placeholder = new JLabel(
-            "Dashboard — Member 4 will implement this",
-            SwingConstants.CENTER
-        );
-        placeholder.setFont(new Font("Arial", Font.BOLD, 16));
-        mainFrame.getContentPane().add(placeholder);
-        mainFrame.revalidate();
-        mainFrame.repaint();
-    }
+    mainFrame.getContentPane().removeAll();
+    
+    mainFrame.getContentPane().add(new DashboardActivity(budgetManager));
+    
+    mainFrame.revalidate();
+    mainFrame.repaint();
+}
 }
