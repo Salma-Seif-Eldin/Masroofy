@@ -2,8 +2,6 @@ package Views;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import Database.TransactionDAO;
 import Models.Expense;
 import Controllers.ExpenseController;

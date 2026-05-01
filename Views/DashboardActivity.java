@@ -31,28 +31,62 @@ public class DashboardActivity extends JPanel {
 }
 
     private void initViews() {
-        tvAllowance = new JLabel("Allowance: ");
-        tvRemaining = new JLabel("Remaining: ");
-        tvDailyLimit = new JLabel("Safe Daily Limit: ");
-        tvDailySpent = new JLabel("Spent Today: ");
-        tvStatus = new JLabel("Status: ");
-        pbBudgetProgress = new JProgressBar(0, 100);
-        pbBudgetProgress.setStringPainted(true);
-        JButton btnReport = new JButton("Generate Report");
-        btnReport.addActionListener(e -> {
-        String reportData = reportController.generateSummaryReport();
-        JOptionPane.showMessageDialog(this, reportData, "Cycle Summary", JOptionPane.INFORMATION_MESSAGE);
-        });
-        // Add them to the window
-        add(btnReport);
-        add(tvAllowance);
-        add(tvRemaining);
-        add(tvDailyLimit);
-        add(tvDailySpent);
-        add(pbBudgetProgress);
-        add(tvStatus);
-    }
+    // 1. Set Layout and Padding
+    this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+    this.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+    // 2. Initialize the labels you already have
+    tvStatus = new JLabel("Status: Loading...");
+    tvAllowance = new JLabel("Total Allowance: 0.00");
+    tvRemaining = new JLabel("Remaining: 0.00");
+    tvDailyLimit = new JLabel("Daily Limit: 0.00");
+    tvDailySpent = new JLabel("Spent Today: 0.00");
+    
+    pbBudgetProgress = new JProgressBar(0, 100);
+    pbBudgetProgress.setStringPainted(true);
+
+    // 3. Navigation Buttons
+    JButton btnAddExpense = new JButton("Add Expense");
+    JButton btnHistory = new JButton("View History");
+    JButton btnReport = new JButton("Generate Report");
+
+    // 4. Button Logic
+    btnAddExpense.addActionListener(e -> {
+        // FIX: Pass the budgetManager here!
+        ExpensesEntryActivity entry = new ExpensesEntryActivity(budgetManager);
+        entry.setVisible(true);
+        
+        // Refresh when closed
+        entry.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                refreshUI();
+            }
+        });
+    });
+
+    btnHistory.addActionListener(e -> new HistoryActivity().setVisible(true));
+
+    btnReport.addActionListener(e -> {
+        String report = reportController.generateSummaryReport();
+        JOptionPane.showMessageDialog(this, report);
+    });
+
+    // 5. Add everything to the panel
+    add(tvStatus);
+    add(Box.createVerticalStrut(10));
+    add(tvAllowance);
+    add(tvRemaining);
+    add(Box.createVerticalStrut(10));
+    add(pbBudgetProgress);
+    add(Box.createVerticalStrut(10));
+    add(tvDailyLimit);
+    add(tvDailySpent);
+    add(Box.createVerticalStrut(20));
+    add(btnAddExpense);
+    add(btnHistory);
+    add(btnReport);
+}
     private void refreshUI() {
         BudgetCycle currentCycle = budgetManager.getCurrentCycle();
 

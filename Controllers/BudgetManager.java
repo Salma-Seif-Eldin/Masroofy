@@ -181,12 +181,16 @@ public class BudgetManager {
         }
         return todaySpent;
     }
-    public double recalculateLimits() {
-        // Called after any edit/delete to past expenses
-        // Forces a full recalculation of remaining budget and daily limit
-        // This is necessary because changing past data can affect current/future limits
-        return getRemainingBudget();
+    public void recalculateLimits() {
+    if (currentCycle != null) {
+        // Fetch the fresh list from DB including the one you just added
+        expenses = cycleDAO.getExpensesByCycle(currentCycle.getCycleId());
+        
+        // Re-run the math
+        currentCycle.calculateRemainingBalance(expenses);
+        currentCycle.calculateDailyLimit();
     }
+}
 
     
     public Map<String, Double> getPieChartData() {

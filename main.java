@@ -1,38 +1,45 @@
-import Controllers.BudgetManager;
-import Database.DatabaseManager;
-import Views.CycleSetupActivity;
-import Views.DashboardActivity;
+
 import javax.swing.*;
+import Database.DatabaseManager;
+import Database.TransactionDAO;
+import Database.CycleDAO;
+import Controllers.BudgetManager;
+import Controllers.ExpenseController;
+import Views.DashboardActivity;
+import Views.CycleSetupActivity;
 
 public class main {
-
     public static void main(String[] args) {
-
-        // Step 1 — Create all database tables
+        // 1. Initialize Database Tables
+        // This ensures your SQLite file and tables exist before anything else runs.
         DatabaseManager.createTables();
 
-        // framework Launch
+        // 2. Initialize Shared Data Access Objects (DAOs)
+        CycleDAO cycleDAO = new CycleDAO();
+        TransactionDAO transactionDAO = new TransactionDAO();
+
+        // 3. Initialize Shared Controllers (The Glue)
+        // We create one instance of BudgetManager so data stays synced across screens.
+        BudgetManager budgetManager = new BudgetManager();
+        budgetManager.loadExistingBudget(); // Checks if a cycle exists in the DB
+
+        // 4. Create the Main Window (JFrame)
+        JFrame mainFrame = new JFrame("Masroofy - Smart Budget Tracker");
+        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setSize(500, 500);
+        mainFrame.setLocationRelativeTo(null);
+
+        // 5. App Entry Logic: Setup or Dashboard?
         SwingUtilities.invokeLater(() -> {
-
-            // Create shared BudgetManager
-            BudgetManager budgetManager = new BudgetManager();
-            budgetManager.loadExistingBudget();
-
-            //  main window
-            JFrame frame = new JFrame("Masroofy — مصروفي");
-            frame.setSize(800, 600);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setLocationRelativeTo(null);
-
-            // Show correct screen based on saved data
             if (budgetManager.getCurrentCycle() == null) {
-                // No saved cycle → show setup form
-                frame.add(new CycleSetupActivity(budgetManager, frame));
+                // If no budget is found, go to the Setup Panel
+                mainFrame.getContentPane().add(new CycleSetupActivity(budgetManager, mainFrame));
             } else {
-                frame.add(new DashboardActivity(budgetManager));
+                // If budget exists, go straight to the Dashboard
+                mainFrame.getContentPane().add(new DashboardActivity(budgetManager));
             }
-
-            frame.setVisible(true);
+            
+            mainFrame.setVisible(true);
         });
     }
 }
