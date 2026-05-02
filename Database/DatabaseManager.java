@@ -51,7 +51,7 @@ public class DatabaseManager {
             "amount      REAL    NOT NULL,"                      +
             "category_id INTEGER NOT NULL,"                      +
             "notes       TEXT,"                                  +
-            "timestamp   TEXT    NOT NULL,"                      +
+            "date   TEXT    NOT NULL,"                      +
             "FOREIGN KEY (cycle_id) REFERENCES budget_cycles(cycle_id)" +
             ");";
         // expense_id  — auto generated unique number
