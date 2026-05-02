@@ -3,8 +3,9 @@ package Views;
 import Controllers.BudgetManager;
 import Controllers.ReportController;  
 import Models.BudgetCycle;
-import Models.DashboardModel; // استيراد الموديل
+import Models.DashboardModel; 
 import java.awt.*;
+import java.util.Map; // Added for category data
 import javax.swing.*;
 
 public class DashboardActivity extends JPanel {
@@ -13,6 +14,7 @@ public class DashboardActivity extends JPanel {
     private JProgressBar pbBudgetProgress;
     private final BudgetManager budgetManager;
     private ReportController reportController;
+    private SpendingChart spendingChart; // Added from second file
 
     public DashboardActivity(BudgetManager manager) {
         this.budgetManager = manager;
@@ -22,8 +24,8 @@ public class DashboardActivity extends JPanel {
         setBackground(new Color(10, 25, 47));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        initViews(); // استدعاء تهيئة العناصر
-        refreshUI(); // استدعاء تحديث البيانات
+        initViews(); 
+        refreshUI(); 
     }
 
     private void initViews() {
@@ -39,14 +41,20 @@ public class DashboardActivity extends JPanel {
         // 2. تهيئة الـ ProgressBar
         pbBudgetProgress = new JProgressBar(0, 100);
         pbBudgetProgress.setStringPainted(true);
-        pbBudgetProgress.setForeground(new Color(212, 175, 55)); // لون ذهبي للتحميل
+        pbBudgetProgress.setForeground(new Color(212, 175, 55)); 
 
-        // 3. تهيئة الأزرار
+        // 3. تهيئة الـ SpendingChart (Added from second file)
+        spendingChart = new SpendingChart();
+        spendingChart.setPreferredSize(new Dimension(400, 200));
+        JLabel lblChartTitle = new JLabel("Spending by Category:");
+        lblChartTitle.setForeground(Color.WHITE);
+
+        // 4. تهيئة الأزرار
         JButton btnAddExpense = new JButton("Add Expense");
         JButton btnHistory = new JButton("View History");
         JButton btnReport = new JButton("Generate Report");
 
-        // 4. إعداد الـ Actions
+        // 5. إعداد الـ Actions
         btnAddExpense.addActionListener(e -> {
             ExpensesEntryActivity entry = new ExpensesEntryActivity(budgetManager);
             entry.setVisible(true);
@@ -54,7 +62,7 @@ public class DashboardActivity extends JPanel {
                 @Override
                 public void windowClosed(java.awt.event.WindowEvent e) {
                     budgetManager.loadExistingBudget();
-                    refreshUI(); // إعادة التحديث بالاعتماد على الموديل
+                    refreshUI(); 
                 }
             });
         });
@@ -66,7 +74,7 @@ public class DashboardActivity extends JPanel {
             JOptionPane.showMessageDialog(this, report, "Report Summary", JOptionPane.INFORMATION_MESSAGE);
         });
 
-        // 5. إضافة العناصر للـ Panel بترتيب منظم
+        // 6. إضافة العناصر للـ Panel بترتيب منظم
         add(tvStatus);
         add(Box.createVerticalStrut(10));
         add(tvAllowance);
@@ -77,6 +85,12 @@ public class DashboardActivity extends JPanel {
         add(tvDailyLimit);
         add(tvDailySpent);
         add(Box.createVerticalStrut(20));
+        
+        // Adding the chart elements (Added from second file)
+        add(lblChartTitle);
+        add(spendingChart);
+        add(Box.createVerticalStrut(20));
+
         add(btnAddExpense);
         add(Box.createVerticalStrut(10));
         add(btnHistory);
@@ -85,7 +99,6 @@ public class DashboardActivity extends JPanel {
     }
 
     private void refreshUI() {
-        // الربط مع الـ Model: نطلب من المنيجر تزويدنا بكائن DashboardModel كامل البيانات
         DashboardModel uiModel = budgetManager.getDashboardData();
         
         if (uiModel == null) {
@@ -93,7 +106,7 @@ public class DashboardActivity extends JPanel {
             return;
         }
 
-        // تحديث النصوص مباشرة من الـ Model (بدون أي حسابات منطقية هنا)
+        // تحديث النصوص مباشرة من الـ Model
         tvAllowance.setText(String.format("Total Allowance: %.2f EGP", uiModel.getTotalAllowance()));
         tvRemaining.setText(String.format("Remaining: %.2f EGP", uiModel.getRemainingBudget()));
         tvDailyLimit.setText(String.format("Safe Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
@@ -103,8 +116,22 @@ public class DashboardActivity extends JPanel {
         double spentPercent = uiModel.getSpendingPercentage();
         pbBudgetProgress.setValue((int) spentPercent);
         
-        // تحديث لون الحالة بناءً على ما حدده الـ Model (Green, Orange, Red)
+        // تحديث لون الحالة بناءً على ما حدده الـ Model
         updateStatusColor(uiModel.getStatusColor());
+
+        // --- Integrated from Second File ---
+        
+        // Update Chart Data
+        Map<String, Double> categoryData = budgetManager.getPieChartData();
+        if (spendingChart != null) {
+            spendingChart.setData(categoryData);
+            spendingChart.repaint(); 
+        }
+
+        // Daily Limit Alert
+        if (uiModel.getTotalSpent() > uiModel.getSafeDailyLimit()) {
+            JOptionPane.showMessageDialog(this, "You have exceeded your daily limit!", "Budget Alert", JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     private void updateStatusColor(String color) {
@@ -119,7 +146,7 @@ public class DashboardActivity extends JPanel {
                 break;
             default:
                 tvStatus.setText("✅ Your budget is on track");
-                tvStatus.setForeground(new Color(50, 205, 50)); // Lime Green
+                tvStatus.setForeground(new Color(50, 205, 50)); 
                 break;
         }
     }
