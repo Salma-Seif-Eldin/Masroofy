@@ -3,244 +3,160 @@ package Controllers;
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;// for pie chart
 import Models.BudgetCycle;
+import Models.DashboardModel;
 import Models.Expense;
 import Database.CycleDAO;
-
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 public class BudgetManager {
 
     private BudgetCycle currentCycle;
-    private List<Expense> expenses = new ArrayList<>();//using alist avoids hitting the database on every calculation 
-    private CycleDAO cycleDAO = new CycleDAO(); //Database handler 
-    private AlertManager alertManager = new AlertManager();//handels warnings
+    private List<Expense> expenses = new ArrayList<>(); 
+    private CycleDAO cycleDAO = new CycleDAO(); 
+    private AlertManager alertManager = new AlertManager();
+    private String currentPin; 
 
 
-    public BudgetCycle getCurrentCycle() {
-    return currentCycle;
-}
+    public void setCurrentPin(String pin) {
+        this.currentPin = pin;
+    }
+
+    public String getCurrentPin() {
+        return currentPin;
+    }
+    public long calculateDaysRemaining(Date endDateStr) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate end = LocalDate.parse(new java.text.SimpleDateFormat("yyyy-MM-dd").format(endDateStr)); // تأكدي من Format التاريخ yyyy-MM-dd
+            long days = ChronoUnit.DAYS.between(today, end) + 1;
+            return (days <= 0) ? 1 : days;
+        } catch (Exception e) {
+            return 1;
+        }
+    }
 
     public void loadExistingBudget() {
-        //checks if their is a saved cycle
-        currentCycle = cycleDAO.getLastSavedCycle();
-        // to get most recent cycle
+        if (currentPin == null) return;
+
+        currentCycle = cycleDAO.getLastSavedCycle(currentPin);
+        
         if (currentCycle != null) {
-            expenses = cycleDAO.getExpensesByCycle(currentCycle.getCycleId());
-             // load all expenses that belong to this cycle
+            expenses = cycleDAO.getExpensesByCycle(currentCycle.getCycleId(), currentPin);
+            
+            currentCycle.calculateRemainingBalance(expenses);
+            currentCycle.calculateDailyLimit();
+            
             alertManager.requestPermissions();
-             // make sure notifications are enabled
-            System.out.println("Welcome back! Loaded saved budget: " + currentCycle.getTotalAllowance());
+            System.out.println("✅ Data loaded for user: " + currentPin);
         } else {
-            System.out.println("No existing budget found. Please start a new cycle.");
+            expenses = new ArrayList<>();
+            System.out.println("ℹ️ No existing budget for user: " + currentPin);
         }
     }
 
- //cycle methods
 
     public boolean startCycle(double allowance, Date start, Date end) {
-        currentCycle = new BudgetCycle();
-        //creates new budget cycle 
-        boolean success = currentCycle.initialize(allowance, start, end);
-       //checks if inputs are valid 
+        if (currentPin == null) return false;
 
-        if (success) {
-            cycleDAO.saveNewCycle(currentCycle);
-            expenses = new ArrayList<>(); // reset expenses for new cycle
-            alertManager.requestPermissions();
-            return true;
-        }
-        return false;
-        // Validation failed — View should show error message
-    }
+        BudgetCycle newCycle = new BudgetCycle();
+        newCycle.setUserPin(currentPin);
+        newCycle.setTotalAllowance(allowance);
+        newCycle.setStartDate(start);
+        newCycle.setEndDate(end);
 
-    public double getDailyLimit() {
-        return (currentCycle != null) ? currentCycle.calculateDailyLimit() : 0.0;
-         // if cycle exists return limit, else 0
-         // Used by Dashboard to show "Safe to spend today: X EGP"
-    }
-
-    public double getRemainingBudget() {
-        if (currentCycle == null) return 0.0;
-        return currentCycle.calculateRemainingBalance(expenses);
-         // Passes expense list to BudgetCycle which does the math
-        // = totalAllowance - sum of all expense amounts
-    }
-
-    //resets 
-    public void resetCycle() {
-        currentCycle = null;
-        expenses.clear();
-        alertManager.clearNotifications();
-        System.out.println("Cycle has been reset.");
-    }
-
-      // BudgetCycle adds remaining balance to allowance
-    public void applyRollover() {
-        if (currentCycle != null) {
-            currentCycle.applyRollover();
-            cycleDAO.saveNewCycle(currentCycle);
-            System.out.println("Rollover applied. New allowance: " + currentCycle.getTotalAllowance());
-        }
-    }
-
-    //Expense method
-
-    
-    public boolean addExpense(double amount, int categoryId, String notes) {
-        if (currentCycle == null) {
-            System.out.println("No active cycle. Please start a budget cycle first.");
-            return false;
-             // Can't add expense without an active budget
-        }
-
-        Expense expense = new Expense(amount, categoryId, notes);
-         //Create expense obj and set timestamp to now 
-
-        if (!expense.save()) {
-            System.out.println("Expense validation failed.");
-            return false;
-        }
-
-        // link expense to current cycle
-        expense.setCycleId(currentCycle.getCycleId());
-        boolean saved = cycleDAO.insertExpense(expense);
-
+        boolean saved = cycleDAO.saveNewCycle(newCycle, currentPin);
         if (saved) {
-            expenses.add(expense);
-
-            // Use AlertManager to monitor thresholds
-            double totalSpent = currentCycle.getTotalAllowance() - getRemainingBudget();
-            alertManager.monitorBudgetTotalSpent( totalSpent,currentCycle.getTotalAllowance()
-            );
-            alertManager.monitorDailyLimit(getDailySpent(),getDailyLimit());
-
-            System.out.println("Expense added. New balance: " + getRemainingBudget());
+            this.currentCycle = newCycle;
+            this.expenses.clear();
             return true;
         }
         return false;
     }
 
-  
-    public boolean editExpense(int id, double amount, int categoryId) {
-        for (Expense e : expenses) {
-            if (e.getExpenseId() == id) {
-                // Found the right expense in memory
-                boolean edited = e.editExpense(amount, categoryId, e.getNotes());
-                // Expense validates and updates its own fields
-                if (edited) {
-                    return cycleDAO.updateExpense(e);
-                     // Sync the change to the database
-                }
-            }
-        }
-        System.out.println("Expense not found with ID: " + id);
-        return false;
-        // Expense with that ID not found
+    public BudgetCycle getCurrentCycle() {
+        return currentCycle;
     }
 
-
-    public boolean deleteExpense(int id) {
-        boolean deleted = cycleDAO.deleteExpense(id);
-        // Remove from database first
-        if (deleted) {
-            expenses.removeIf(e -> e.getExpenseId() == id);
-            System.out.println("Expense deleted: " + id);
-        }
-        return deleted;
-    }
-
-   
     public List<Expense> getExpenses() {
         return expenses;
-        //used by history to return expense list 
     }
 
-   // calculations methods
 
-    public double getSpentPercentage() {
-        if (currentCycle == null || currentCycle.getTotalAllowance() <= 0) return 0.0;
-        double allowance = currentCycle.getTotalAllowance();
-        double spent = allowance - getRemainingBudget();
-        return (spent / allowance) * 100;
+    public double getRemainingBudget() {
+        if (currentCycle == null) return 0;
+        return currentCycle.calculateRemainingBalance(expenses);
     }
 
-  
-    public double getDailySpent() {
-        if (expenses == null || expenses.isEmpty()) return 0.0;
-
-        double todaySpent = 0.0;
-        Date today = new Date();
-
-        for (Expense e : expenses) {
-            // Compare year/month/day only
-            if (isSameDay(e.getTimestamp(), today)) {
-                todaySpent += e.getAmount();
-            }
-        }
-        return todaySpent;
-    }
-    public void recalculateLimits() {
-    if (currentCycle != null) {
-        // Fetch the fresh list from DB including the one you just added
-        expenses = cycleDAO.getExpensesByCycle(currentCycle.getCycleId());
-        
-        // Re-run the math
-        currentCycle.calculateRemainingBalance(expenses);
-        currentCycle.calculateDailyLimit();
-    }
+public double getDailyLimit() {
+    if (currentCycle == null) return 0.0;
+    long daysRemaining = calculateDaysRemaining(currentCycle.getEndDate());
+    if (daysRemaining <= 0) daysRemaining = 1;
+    return getRemainingBudget() / daysRemaining;
 }
 
-    
-    public Map<String, Double> getPieChartData() {
-        //returns spend groubed by category 
-        Map<String, Double> chartData = new HashMap<>();
 
-        if (expenses == null || expenses.isEmpty()) {
-            System.out.println("No expenses to chart.");
-            return chartData;
-        }
-
+    public double getDailySpent() {
+        double todayTotal = 0;
+        Date today = new Date();
         for (Expense e : expenses) {
-            String categoryName = getCategoryName(e.getCategoryId());
-
-            // If category exists, add to it — if not, start from 0
-            chartData.put( categoryName,chartData.getOrDefault(categoryName, 0.0) + e.getAmount()
-            );
+            if (isSameDay(e.getTimestamp(), today)) {
+                todayTotal += e.getAmount();
+            }
         }
-
-        return chartData;
+        return todayTotal;
     }
 
-  // secuirty methods
-    public boolean verifyFingerprint() {
-        // Will connect to PrivacyLock / biometric system
-        System.out.println("Fingerprint verification requested.");
-        return false;
+    public double getSpentPercentage() {
+        if (currentCycle == null || currentCycle.getTotalAllowance() <= 0) return 0;
+        double spent = currentCycle.getTotalAllowance() - getRemainingBudget();
+        return (spent / currentCycle.getTotalAllowance()) * 100;
     }
 
-  //private helper methods 
+    public String getSavedPin() {
+        String sql = "SELECT value FROM settings WHERE key = 'user_pin'";
+        try (java.sql.Connection conn = Database.DatabaseManager.connect();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            java.sql.ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return rs.getString("value");
+        } catch (Exception e) {
+            System.out.println("Error fetching PIN: " + e.getMessage());
+        }
+        return null;
+    }
+        public DashboardModel getDashboardData() {
+        if (currentCycle == null) return null;
 
-    // Converts categoryId integer to readable name for pie chart
-    private String getCategoryName(int categoryId) {
-        switch (categoryId) {
-            case 1:  return "Food";
-            case 2:  return "Transport";
-            case 3:  return "Shopping";
-            case 4:  return "Health";
-            case 5:  return "Education";
-            case 6:  return "Entertainment";
-            default: return "Other";
+        double allowance = currentCycle.getTotalAllowance();
+        double spent = getDailySpent(); // أو المجموع الكلي حسب منطقك
+        double dailyLimit = getDailyLimit();
+        
+        // تحديد اللون بناءً على النسبة
+        String color = "Green";
+        if (getSpentPercentage() >= 90) color = "Red";
+        else if (getSpentPercentage() >= 80) color = "Orange";
+
+        // إرجاع كائن الموديل للـ View
+        return new DashboardModel(allowance, spent, dailyLimit, null, color);
+    }
+
+    public void savePin(String pin) {
+        String sql = "INSERT OR REPLACE INTO settings (key, value) VALUES ('user_pin', ?)";
+        try (java.sql.Connection conn = Database.DatabaseManager.connect();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, pin);
+            pstmt.executeUpdate();
+            System.out.println("✅ PIN saved successfully.");
+        } catch (Exception e) {
+            System.out.println("Error saving PIN: " + e.getMessage());
         }
     }
 
-   // Compares year, month, day — ignores hours/minutes/seconds
-    @SuppressWarnings("deprecation")
+
     private boolean isSameDay(Date d1, Date d2) {
         if (d1 == null || d2 == null) return false;
-        return d1.getYear()  == d2.getYear()
-            && d1.getMonth() == d2.getMonth()
-            && d1.getDate()  == d2.getDate();
+        java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("yyyyMMdd");
+        return fmt.format(d1).equals(fmt.format(d2));
     }
 }

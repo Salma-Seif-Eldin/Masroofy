@@ -5,10 +5,6 @@ import Models.Expense;
 import java.util.List;
 import java.text.SimpleDateFormat;
 
-/**
- * This class adapts a List of Expense objects for a JTable.
- * It handles how the data is mapped to columns and rows.
- */
 public class TransactionAdapter extends AbstractTableModel {
     private final String[] columnNames = {"ID", "Amount", "Category", "Date", "Notes"};
     private List<Expense> expenseList;
@@ -17,8 +13,7 @@ public class TransactionAdapter extends AbstractTableModel {
     public TransactionAdapter(List<Expense> expenses) {
         this.expenseList = expenses;
     }
-
-    // Update the list and refresh the table (notifyDataSetChanged)
+    
     public void setExpenses(List<Expense> expenses) {
         this.expenseList = expenses;
         fireTableDataChanged(); 

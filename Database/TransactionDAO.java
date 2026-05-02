@@ -8,12 +8,7 @@ import java.util.Date;
 
 public class TransactionDAO {
 
-    /**
-     * Saves a new expense. 
-     * We use the timestamp from the Expense object for consistency.
-     */
     public boolean saveExpense(Expense expense) {
-    // UPDATED SQL to include cycle_id
     String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id) VALUES (?, ?, ?, DATE('now'), ?)";
 
     try (Connection conn = DatabaseManager.connect();
@@ -22,7 +17,7 @@ public class TransactionDAO {
         pstmt.setDouble(1, expense.getAmount());
         pstmt.setInt(2, expense.getCategoryId());
         pstmt.setString(3, expense.getNotes());
-        pstmt.setInt(4, expense.getCycleId()); // Link the expense to the cycle
+        pstmt.setInt(4, expense.getCycleId());
         
         pstmt.executeUpdate();
         return true;
@@ -32,9 +27,6 @@ public class TransactionDAO {
     }
 }
 
-    /**
-     * Retrieves all expenses as a List.
-     */
     public List<Expense> getAllExpenses() {
         List<Expense> list = new ArrayList<>();
         String sql = "SELECT * FROM expenses ORDER BY date DESC";
@@ -52,12 +44,8 @@ public class TransactionDAO {
         return list;
     }
 
-    /**
-     * Filters expenses by category and date range.
-     */
     public List<Expense> getFilteredExpenses(int categoryID, long start, long end) {
         List<Expense> expenses = new ArrayList<>();
-        // Dynamic SQL based on whether category filter is "All" (0)
         String sql = (categoryID == 0) 
             ? "SELECT * FROM expenses WHERE date >= ? AND date <= ? ORDER BY date DESC"
             : "SELECT * FROM expenses WHERE category_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
@@ -84,9 +72,6 @@ public class TransactionDAO {
         return expenses;
     }
 
-    /**
-     * Updates an existing expense.
-     */
     public boolean updateExpense(Expense expense) {
         String sql = "UPDATE expenses SET amount = ?, notes = ?, category_id = ? WHERE expense_id = ?";
 
@@ -105,9 +90,6 @@ public class TransactionDAO {
         }
     }
 
-    /**
-     * Deletes an expense by ID.
-     */
     public boolean deleteExpense(int id) {
         String sql = "DELETE FROM expenses WHERE expense_id = ?";
 
@@ -122,11 +104,7 @@ public class TransactionDAO {
         }
     }
 
-    /**
-     * Helper method to map a database row to an Expense object.
-     */
     private Expense mapResultSetToExpense(ResultSet rs) throws SQLException {
-        // Use the 'Long' from the DB to create a proper Date object
         Date date = new Date(rs.getLong("date"));
         
         Expense e = new Expense(
