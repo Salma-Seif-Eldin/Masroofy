@@ -4,6 +4,7 @@ import Controllers.BudgetManager;
 import Controllers.ReportController;  
 import Models.BudgetCycle;
 import java.awt.*;
+import java.util.Map;
 import javax.swing.*;
 
 // Change: Extends JFrame instead of AppCompatActivity
@@ -16,6 +17,8 @@ public class DashboardActivity extends JPanel {
     // Controller
     private final BudgetManager budgetManager;
     private ReportController reportController;
+        private SpendingChart spendingChart;
+
 
 
     public DashboardActivity(BudgetManager manager) {
@@ -94,6 +97,8 @@ public class DashboardActivity extends JPanel {
             tvStatus.setText("No active cycle. Please start one!");
             return;
         }
+        Map<String, Double> categoryData = reportController.getSpendingByCategory();
+        spendingChart.setData(categoryData);
 
         // Get calculations from BudgetManager
         double remaining = budgetManager.getRemainingBudget();
