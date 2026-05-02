@@ -135,6 +135,19 @@ public class CycleSetupActivity extends JPanel {
 
             double allowance = Double.parseDouble(allowanceText);
             // Throws NumberFormatException if not a valid number
+            
+           // Throws NumberFormatException if not a valid number
+
+              if (allowance <= 0) {
+             feedbackLabel.setForeground(Color.RED);
+             feedbackLabel.setText("Allowance must be a positive number.");
+             return;
+             }
+
+           
+
+
+
 
             // ── Read and validate dates ──
             String startText = startDateField.getText().trim();
