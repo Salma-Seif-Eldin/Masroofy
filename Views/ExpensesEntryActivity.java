@@ -8,6 +8,7 @@ import javax.swing.JOptionPane;
 
 import Controllers.BudgetManager;
 import Controllers.ExpenseController;
+
 /**
  *
  * @author TOP 10
@@ -16,12 +17,12 @@ public class ExpensesEntryActivity extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ExpensesEntryActivity.class.getName());
 
-
     private BudgetManager budgetManager;
 
     public ExpensesEntryActivity(BudgetManager manager) {
         this.budgetManager = manager;
         initComponents();
+        populateCategories(); // Added from second file to ensure list is not empty
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Ensure it triggers 'windowClosed'
     }
 
@@ -115,33 +116,42 @@ public class ExpensesEntryActivity extends javax.swing.JFrame {
         pack();
     }
 
-   private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {
-    try {
-        double amount = Double.parseDouble(jTextField1.getText().trim());
-        String note = jTextField2.getText().trim();
-        String selectedCategory = jComboBox1.getSelectedItem().toString();
-        int categoryId = 1;
-        if (selectedCategory.equals("Food")) categoryId = 1;
-        else if (selectedCategory.equals("Transport")) categoryId = 2;
-        else if (selectedCategory.equals("Shopping")) categoryId = 3;
-        else if (selectedCategory.equals("Health")) categoryId = 4;
-        else if (selectedCategory.equals("Education")) categoryId = 5;
-        else if (selectedCategory.equals("Entertainment")) categoryId = 6;
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            String amountText = jTextField1.getText().trim();
+            
+            // Added validation check from second file
+            if (amountText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter an amount.");
+                return;
+            }
 
-        ExpenseController controller = new ExpenseController(new Database.TransactionDAO(), budgetManager);
-        boolean success = controller.processExpense(amount, categoryId, note);
+            double amount = Double.parseDouble(amountText);
+            String note = jTextField2.getText().trim();
+            String selectedCategory = jComboBox1.getSelectedItem().toString();
+            
+            int categoryId = 1;
+            if (selectedCategory.equals("Food")) categoryId = 1;
+            else if (selectedCategory.equals("Transport")) categoryId = 2;
+            else if (selectedCategory.equals("Shopping")) categoryId = 3;
+            else if (selectedCategory.equals("Health")) categoryId = 4;
+            else if (selectedCategory.equals("Education")) categoryId = 5;
+            else if (selectedCategory.equals("Entertainment")) categoryId = 6;
 
-        if (success) {
-            JOptionPane.showMessageDialog(this, "✅ Expense Saved Successfully!");
-            this.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "❌ Error: Could not save expense.", "Error", JOptionPane.ERROR_MESSAGE);
+            ExpenseController controller = new ExpenseController(new Database.TransactionDAO(), budgetManager);
+            boolean success = controller.processExpense(amount, categoryId, note);
+
+            if (success) {
+                JOptionPane.showMessageDialog(this, "✅ Expense Saved Successfully!");
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "❌ Error: Could not save expense.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid amount.", "Input Error", JOptionPane.ERROR_MESSAGE);
         }
-
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "Please enter a valid amount.", "Input Error", JOptionPane.ERROR_MESSAGE);
     }
-}
 
     private void populateCategories() {
         jComboBox1.removeAllItems();
@@ -151,18 +161,13 @@ public class ExpensesEntryActivity extends javax.swing.JFrame {
         jComboBox1.addItem("Health");
         jComboBox1.addItem("Education");
         jComboBox1.addItem("Entertainment");
-    
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
+    }
 
-    /**
-     * @param args the command line arguments
-     */
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify
     private javax.swing.JButton jButton1;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
@@ -170,5 +175,5 @@ public class ExpensesEntryActivity extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
-    // End of variables declaration//GEN-END:variables
+    // End of variables declaration
 }
