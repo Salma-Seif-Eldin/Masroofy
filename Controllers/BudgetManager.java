@@ -28,18 +28,69 @@ public class BudgetManager {
         return currentPin;
     }
 
-    public long calculateDaysRemaining(Date endDate) {
-        try {
-            LocalDate today = LocalDate.now();
-            LocalDate end = LocalDate.parse(
-                new java.text.SimpleDateFormat("yyyy-MM-dd").format(endDate));
-            long days = ChronoUnit.DAYS.between(today, end) + 1;
-            return (days <= 0) ? 1 : days;
+    // =========================================================================
+    // MULTI-USER: Register a new PIN into the 'users' table
+    // Returns false if that PIN is already taken
+    // =========================================================================
+    public boolean registerPin(String pin) {
+        // Check if already exists
+        if (pinExists(pin)) return false;
+
+        String sql = "INSERT INTO users (pin) VALUES (?)";
+        try (java.sql.Connection conn = Database.DatabaseManager.connect();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, pin);
+            pstmt.executeUpdate();
+            System.out.println("✅ PIN registered: " + pin);
+            return true;
         } catch (Exception e) {
-            return 1;
+            System.out.println("Error registering PIN: " + e.getMessage());
+            return false;
         }
     }
 
+    // =========================================================================
+    // MULTI-USER: Check if a PIN exists in the 'users' table
+    // =========================================================================
+    public boolean pinExists(String pin) {
+        String sql = "SELECT pin FROM users WHERE pin = ?";
+        try (java.sql.Connection conn = Database.DatabaseManager.connect();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, pin);
+            java.sql.ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        } catch (Exception e) {
+            System.out.println("Error checking PIN: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // =========================================================================
+    // Kept for backward-compat — now delegates to registerPin()
+    // =========================================================================
+    public void savePin(String pin) {
+        registerPin(pin);
+    }
+
+    // =========================================================================
+    // Kept for backward-compat — returns ONE saved pin (first found).
+    // AuthActivity no longer uses this; left so nothing breaks.
+    // =========================================================================
+    public String getSavedPin() {
+        String sql = "SELECT pin FROM users LIMIT 1";
+        try (java.sql.Connection conn = Database.DatabaseManager.connect();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            java.sql.ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return rs.getString("pin");
+        } catch (Exception e) {
+            System.out.println("Error fetching PIN: " + e.getMessage());
+        }
+        return null;
+    }
+
+    // =========================================================================
+    // Load budget data for whoever is logged in (currentPin)
+    // =========================================================================
     public void loadExistingBudget() {
         if (currentPin == null) return;
 
@@ -75,23 +126,15 @@ public class BudgetManager {
         return false;
     }
 
-    public BudgetCycle getCurrentCycle() {
-        return currentCycle;
-    }
-
-    public List<Expense> getExpenses() {
-        return expenses;
-    }
+    public BudgetCycle getCurrentCycle() { return currentCycle; }
+    public List<Expense> getExpenses()   { return expenses; }
 
     public double getRemainingBudget() {
         if (currentCycle == null) return 0;
         return currentCycle.calculateRemainingBalance(expenses);
     }
 
-    // ======================================================================
-    // NEW: Fixed daily limit based on TOTAL allowance / TOTAL days
-    // This does NOT change after expenses - each day has a fixed budget
-    // ======================================================================
+    // Fixed daily limit: allowance / total days — does not change after expenses
     public double getFixedDailyLimit() {
         if (currentCycle == null) return 0.0;
         int totalDays = currentCycle.calculateTotalDays();
@@ -99,67 +142,36 @@ public class BudgetManager {
         return currentCycle.getTotalAllowance() / totalDays;
     }
 
-    // ======================================================================
-    // NEW: Get how much the user can still spend TODAY
-    // ======================================================================
+    // How much the user can still spend TODAY
     public double getTodayRemainingDailyLimit() {
         double fixedLimit = getFixedDailyLimit();
         double todaySpent = getDailySpent();
         return Math.max(0, fixedLimit - todaySpent);
     }
 
-    // ======================================================================
-    // NEW: Check if an expense can be added without exceeding limits
-    // ======================================================================
+    // Check if an expense can be added without exceeding any limit
     public boolean canAddExpense(double amount) {
-        if (currentCycle == null) return false;
-        if (amount <= 0) return false;
-        
-        // Check total remaining budget
-        if (getRemainingBudget() < amount) {
-            return false;
-        }
-        
-        // Check today's remaining daily limit
-        if (getTodayRemainingDailyLimit() < amount) {
-            return false;
-        }
-        
-        return true;
+        return getExpenseRejectionReason(amount) == null;
     }
 
-    // ======================================================================
-    // NEW: Get the reason why expense cannot be added
-    // Returns: "budget" or "daily_limit" or null if allowed
-    // ======================================================================
+    // Returns the rejection reason string, or null if the expense is allowed
     public String getExpenseRejectionReason(double amount) {
         if (currentCycle == null) return "no_cycle";
-        if (amount <= 0) return "invalid_amount";
-        
-        if (getRemainingBudget() < amount) {
-            return "budget";
-        }
-        
-        if (getTodayRemainingDailyLimit() < amount) {
-            return "daily_limit";
-        }
-        
-        return null; // Allowed
+        if (amount <= 0)          return "invalid_amount";
+        if (getRemainingBudget()          < amount) return "budget";
+        if (getTodayRemainingDailyLimit() < amount) return "daily_limit";
+        return null;
     }
 
-    // Keep old method for backward compatibility but mark as deprecated
+    /** @deprecated use getFixedDailyLimit() */
     @Deprecated
-    public double getDailyLimit() {
-        return getFixedDailyLimit();
-    }
+    public double getDailyLimit() { return getFixedDailyLimit(); }
 
     public double getDailySpent() {
         double todayTotal = 0;
         Date today = new Date();
         for (Expense e : expenses) {
-            if (isSameDay(e.getTimestamp(), today)) {
-                todayTotal += e.getAmount();
-            }
+            if (isSameDay(e.getTimestamp(), today)) todayTotal += e.getAmount();
         }
         return todayTotal;
     }
@@ -170,32 +182,17 @@ public class BudgetManager {
         return (spent / currentCycle.getTotalAllowance()) * 100;
     }
 
-    public String getSavedPin() {
-        String sql = "SELECT value FROM settings WHERE key = 'user_pin'";
-        try (java.sql.Connection conn = Database.DatabaseManager.connect();
-             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            java.sql.ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) return rs.getString("value");
-        } catch (Exception e) {
-            System.out.println("Error fetching PIN: " + e.getMessage());
-        }
-        return null;
-    }
-
     public DashboardModel getDashboardData() {
         if (currentCycle == null) return null;
-
-        double allowance = currentCycle.getTotalAllowance();
-        double spent = getDailySpent();
-        double dailyLimit = getFixedDailyLimit(); // Use fixed daily limit
+        double allowance  = currentCycle.getTotalAllowance();
+        double spent      = getDailySpent();
+        double dailyLimit = getFixedDailyLimit();
 
         String color = "Green";
         if (getSpentPercentage() >= 100) color = "Red";
         else if (getSpentPercentage() >= 80) color = "Orange";
 
-        Map<String, Double> categoryData = getPieChartData();
-
-        return new DashboardModel(allowance, spent, dailyLimit, categoryData, color);
+        return new DashboardModel(allowance, spent, dailyLimit, getPieChartData(), color);
     }
 
     public Map<String, Double> getPieChartData() {
@@ -208,6 +205,18 @@ public class BudgetManager {
         return data;
     }
 
+    public long calculateDaysRemaining(Date endDate) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate end = LocalDate.parse(
+                new java.text.SimpleDateFormat("yyyy-MM-dd").format(endDate));
+            long days = ChronoUnit.DAYS.between(today, end) + 1;
+            return (days <= 0) ? 1 : days;
+        } catch (Exception e) {
+            return 1;
+        }
+    }
+
     private String getCategoryName(int id) {
         return switch (id) {
             case 1 -> "Food";
@@ -218,18 +227,6 @@ public class BudgetManager {
             case 6 -> "Entertainment";
             default -> "Other";
         };
-    }
-
-    public void savePin(String pin) {
-        String sql = "INSERT OR REPLACE INTO settings (key, value) VALUES ('user_pin', ?)";
-        try (java.sql.Connection conn = Database.DatabaseManager.connect();
-             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, pin);
-            pstmt.executeUpdate();
-            System.out.println("✅ PIN saved successfully.");
-        } catch (Exception e) {
-            System.out.println("Error saving PIN: " + e.getMessage());
-        }
     }
 
     private boolean isSameDay(Date d1, Date d2) {
