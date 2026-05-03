@@ -103,7 +103,7 @@ public class ExpensesEntryActivity extends JFrame {
 
             int categoryId = getCategoryId(selectedCategory);
 
-            ExpenseController controller = new ExpenseController(new TransactionDAO(), budgetManager);
+            ExpenseController controller = ExpenseController.createFor(budgetManager);
             
             // ======================================================================
             // Process expense - validation happens INSIDE the controller
@@ -155,23 +155,14 @@ public class ExpensesEntryActivity extends JFrame {
 
     private void populateCategories() {
         jComboBox1.removeAllItems();
-        jComboBox1.addItem("Food");
-        jComboBox1.addItem("Transport");
-        jComboBox1.addItem("Shopping");
-        jComboBox1.addItem("Health");
-        jComboBox1.addItem("Education");
-        jComboBox1.addItem("Entertainment");
+        // FIXED: Use Category model
+        for (String name : Models.Category.getAllNames()) {
+            jComboBox1.addItem(name);
+        }
     }
 
-    private int getCategoryId(String name) {
-        return switch (name) {
-            case "Food"          -> 1;
-            case "Transport"     -> 2;
-            case "Shopping"      -> 3;
-            case "Health"        -> 4;
-            case "Education"     -> 5;
-            case "Entertainment" -> 6;
-            default              -> 1;
-        };
+     private int getCategoryId(String name) {
+        // FIXED: Use Category model
+        return Models.Category.getIdByName(name);
     }
 }

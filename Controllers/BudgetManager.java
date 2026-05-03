@@ -8,7 +8,9 @@ import java.util.HashMap;
 import Models.BudgetCycle;
 import Models.DashboardModel;
 import Models.Expense;
+import Models.Category;
 import Database.CycleDAO;
+import Database.UserDAO;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -17,6 +19,7 @@ public class BudgetManager {
     private BudgetCycle currentCycle;
     private List<Expense> expenses = new ArrayList<>();
     private CycleDAO cycleDAO = new CycleDAO();
+    private UserDAO userDAO = new UserDAO();  // NEW: use DAO instead of raw SQL
     private AlertManager alertManager = new AlertManager();
     private String currentPin;
 
@@ -28,69 +31,29 @@ public class BudgetManager {
         return currentPin;
     }
 
-    // =========================================================================
-    // MULTI-USER: Register a new PIN into the 'users' table
-    // Returns false if that PIN is already taken
-    // =========================================================================
+    public AlertManager getAlertManager() {
+        return alertManager;
+    }
+
+    // FIXED: Delegate to UserDAO
     public boolean registerPin(String pin) {
-        // Check if already exists
-        if (pinExists(pin)) return false;
-
-        String sql = "INSERT INTO users (pin) VALUES (?)";
-        try (java.sql.Connection conn = Database.DatabaseManager.connect();
-             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, pin);
-            pstmt.executeUpdate();
-            System.out.println("✅ PIN registered: " + pin);
-            return true;
-        } catch (Exception e) {
-            System.out.println("Error registering PIN: " + e.getMessage());
-            return false;
-        }
+        return userDAO.registerPin(pin);
     }
 
-    // =========================================================================
-    // MULTI-USER: Check if a PIN exists in the 'users' table
-    // =========================================================================
+    // FIXED: Delegate to UserDAO
     public boolean pinExists(String pin) {
-        String sql = "SELECT pin FROM users WHERE pin = ?";
-        try (java.sql.Connection conn = Database.DatabaseManager.connect();
-             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, pin);
-            java.sql.ResultSet rs = pstmt.executeQuery();
-            return rs.next();
-        } catch (Exception e) {
-            System.out.println("Error checking PIN: " + e.getMessage());
-            return false;
-        }
+        return userDAO.pinExists(pin);
     }
 
-    // =========================================================================
-    // Kept for backward-compat — now delegates to registerPin()
-    // =========================================================================
     public void savePin(String pin) {
         registerPin(pin);
     }
 
-    // =========================================================================
-    // Kept for backward-compat — returns ONE saved pin (first found).
-    // AuthActivity no longer uses this; left so nothing breaks.
-    // =========================================================================
+    // FIXED: Delegate to UserDAO
     public String getSavedPin() {
-        String sql = "SELECT pin FROM users LIMIT 1";
-        try (java.sql.Connection conn = Database.DatabaseManager.connect();
-             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            java.sql.ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) return rs.getString("pin");
-        } catch (Exception e) {
-            System.out.println("Error fetching PIN: " + e.getMessage());
-        }
-        return null;
+        return userDAO.getFirstPin();
     }
 
-    // =========================================================================
-    // Load budget data for whoever is logged in (currentPin)
-    // =========================================================================
     public void loadExistingBudget() {
         if (currentPin == null) return;
 
@@ -134,7 +97,6 @@ public class BudgetManager {
         return currentCycle.calculateRemainingBalance(expenses);
     }
 
-    // Fixed daily limit: allowance / total days — does not change after expenses
     public double getFixedDailyLimit() {
         if (currentCycle == null) return 0.0;
         int totalDays = currentCycle.calculateTotalDays();
@@ -142,19 +104,16 @@ public class BudgetManager {
         return currentCycle.getTotalAllowance() / totalDays;
     }
 
-    // How much the user can still spend TODAY
     public double getTodayRemainingDailyLimit() {
         double fixedLimit = getFixedDailyLimit();
         double todaySpent = getDailySpent();
         return Math.max(0, fixedLimit - todaySpent);
     }
 
-    // Check if an expense can be added without exceeding any limit
     public boolean canAddExpense(double amount) {
         return getExpenseRejectionReason(amount) == null;
     }
 
-    // Returns the rejection reason string, or null if the expense is allowed
     public String getExpenseRejectionReason(double amount) {
         if (currentCycle == null) return "no_cycle";
         if (amount <= 0)          return "invalid_amount";
@@ -163,7 +122,6 @@ public class BudgetManager {
         return null;
     }
 
-    /** @deprecated use getFixedDailyLimit() */
     @Deprecated
     public double getDailyLimit() { return getFixedDailyLimit(); }
 
@@ -199,7 +157,8 @@ public class BudgetManager {
         Map<String, Double> data = new HashMap<>();
         if (expenses == null) return data;
         for (Expense e : expenses) {
-            String name = getCategoryName(e.getCategoryId());
+            // FIXED: Use Category model
+            String name = Category.getNameById(e.getCategoryId());
             data.put(name, data.getOrDefault(name, 0.0) + e.getAmount());
         }
         return data;
@@ -217,17 +176,7 @@ public class BudgetManager {
         }
     }
 
-    private String getCategoryName(int id) {
-        return switch (id) {
-            case 1 -> "Food";
-            case 2 -> "Transport";
-            case 3 -> "Shopping";
-            case 4 -> "Health";
-            case 5 -> "Education";
-            case 6 -> "Entertainment";
-            default -> "Other";
-        };
-    }
+    // REMOVED: getCategoryName() - now uses Category.getNameById()
 
     private boolean isSameDay(Date d1, Date d2) {
         if (d1 == null || d2 == null) return false;

@@ -22,7 +22,7 @@ public class HistoryActivity extends JFrame {
     public HistoryActivity(BudgetManager manager, DashboardActivity dashboard) {
         this.budgetManager = manager;
         this.dashboard = dashboard;
-        this.expenseController = new ExpenseController(new TransactionDAO(), budgetManager);
+        this.expenseController = ExpenseController.createFor(budgetManager);
         
         setTitle("Expense History - User: " + budgetManager.getCurrentPin());
         setSize(800, 550);
@@ -184,14 +184,7 @@ public class HistoryActivity extends JFrame {
     }
 
     private String getCategoryName(int id) {
-        return switch (id) {
-            case 1 -> "Food";
-            case 2 -> "Transport";
-            case 3 -> "Shopping";
-            case 4 -> "Health";
-            case 5 -> "Education";
-            case 6 -> "Entertainment";
-            default -> "Other";
-        };
+        // FIXED: Use Category model
+        return Models.Category.getNameById(id);
     }
 }

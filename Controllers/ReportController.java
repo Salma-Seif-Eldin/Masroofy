@@ -2,6 +2,7 @@ package Controllers;
 
 import Models.Expense;
 import Models.BudgetCycle;
+import Models.Category;  // NEW
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -14,7 +15,6 @@ public class ReportController {
         this.budgetManager = budgetManager;
     }
 
-    
     public Map<String, Double> getSpendingByCategory() {
         Map<String, Double> report = new HashMap<>();
         List<Expense> expenses = budgetManager.getExpenses();
@@ -22,13 +22,13 @@ public class ReportController {
         if (expenses == null) return report;
 
         for (Expense e : expenses) {
-            String categoryName = getCategoryName(e.getCategoryId());
+            // FIXED: Use Category model
+            String categoryName = Category.getNameById(e.getCategoryId());
             report.put(categoryName, report.getOrDefault(categoryName, 0.0) + e.getAmount());
         }
         return report;
     }
 
-    
     public String generateSummaryReport() {
         BudgetCycle cycle = budgetManager.getCurrentCycle();
         if (cycle == null) return "No active budget cycle found.";
@@ -50,15 +50,5 @@ public class ReportController {
         return summary.toString();
     }
 
-    private String getCategoryName(int id) {
-        return switch (id) {
-            case 1 -> "Food";
-            case 2 -> "Transport";
-            case 3 -> "Shopping";
-            case 4 -> "Health";
-            case 5 -> "Education";
-            case 6 -> "Entertainment";
-            default -> "Other";
-        };
-    }
+    // REMOVED: getCategoryName() - now uses Category.getNameById()
 }

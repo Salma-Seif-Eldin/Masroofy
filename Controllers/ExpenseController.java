@@ -13,8 +13,14 @@ public class ExpenseController {
         this.budgetController = budgetController;
     }
 
+    // ======================================================================
+    // NEW: Factory method so Views don't create TransactionDAO directly
+    // ======================================================================
+    public static ExpenseController createFor(BudgetManager budgetManager) {
+        return new ExpenseController(new TransactionDAO(), budgetManager);
+    }
+
     public ExpenseResult processExpense(double amount, int category_id, String note) {
-        // Basic validation
         if (amount <= 0) {
             return new ExpenseResult(false, "Amount must be greater than 0.", "invalid_amount");
         }
@@ -23,7 +29,6 @@ public class ExpenseController {
             return new ExpenseResult(false, "No active budget cycle.", "no_cycle");
         }
 
-        // CHECK LIMITS BEFORE SAVING
         String rejectionReason = budgetController.getExpenseRejectionReason(amount);
         
         if (rejectionReason != null) {
@@ -48,7 +53,6 @@ public class ExpenseController {
             }
         }
 
-        // ALL CHECKS PASSED - Now save the expense
         Expense newExpense = new Expense(amount, category_id, note);
         newExpense.setCycleId(budgetController.getCurrentCycle().getCycleId());
         newExpense.setUserPin(budgetController.getCurrentPin());
@@ -66,7 +70,6 @@ public class ExpenseController {
                 warning = String.format("⚠️ WARNING: You have used %.1f%% of your budget!", pct);
             }
             
-            // FIX: Use 4 parameters here, pass null for rejectionType
             return new ExpenseResult(true, "Expense saved successfully!", warning, null);
         } else {
             return new ExpenseResult(false, "Database error: Could not save expense.", "db_error");
@@ -78,28 +81,31 @@ public class ExpenseController {
     }
 
     public boolean modifyTransaction(int id, String action, Expense updatedData) {
-    if (action.equals("Edit") && updatedData != null) {
-        // 1. تنفيذ التعديل في قاعدة البيانات
-        boolean success = transactionDAO.updateExpense(id, updatedData.getAmount(), 
-                                                       updatedData.getCategoryId(), 
-                                                       updatedData.getNotes());
-        
-        if (success) {
-            // 2. تحديث البيانات في الـ BudgetManager لتعكس على الـ Dashboard فوراً
-            budgetController.loadExistingBudget(); 
-            return true;
+        if (action.equals("Edit") && updatedData != null) {
+            boolean success = transactionDAO.updateExpense(id, updatedData.getAmount(), 
+                                                           updatedData.getCategoryId(), 
+                                                           updatedData.getNotes());
+            
+            if (success) {
+                budgetController.loadExistingBudget(); 
+                return true;
+            }
+        } else if (action.equals("Delete")) {
+            boolean success = transactionDAO.deleteExpense(id);
+            if (success) {
+                budgetController.loadExistingBudget();
+                return true;
+            }
         }
-    } else if (action.equals("Delete")) {
-        boolean success = transactionDAO.deleteExpense(id);
-        if (success) {
-            budgetController.loadExistingBudget();
-            return true;
-        }
+        return false;
     }
-    return false;
-}
+
+    public List<Expense> filterHistory(int categoryID, String startDate, String endDate) {
+        return transactionDAO.getFilteredExpenses(categoryID, startDate, endDate);
+    }
+
     // ======================================================================
-    // Result class - FIXED: Only TWO unique constructors
+    // Result class
     // ======================================================================
     public static class ExpenseResult {
         private final boolean success;
@@ -107,7 +113,6 @@ public class ExpenseController {
         private final String warning;
         private final String rejectionType;
 
-        // Constructor 1: For failures (3 parameters)
         public ExpenseResult(boolean success, String message, String rejectionType) {
             this.success = success;
             this.message = message;
@@ -115,7 +120,6 @@ public class ExpenseController {
             this.rejectionType = rejectionType;
         }
 
-        // Constructor 2: For success with optional warning (4 parameters)
         public ExpenseResult(boolean success, String message, String warning, String rejectionType) {
             this.success = success;
             this.message = message;
@@ -129,8 +133,4 @@ public class ExpenseController {
         public String getRejectionType() { return rejectionType; }
         public boolean hasWarning() { return warning != null && !warning.isEmpty(); }
     }
-    public List<Expense> filterHistory(int categoryID, String startDate, String endDate) {
-    // استدعاء ميثود الـ DAO
-    return transactionDAO.getFilteredExpenses(categoryID, startDate, endDate);
-}
 }

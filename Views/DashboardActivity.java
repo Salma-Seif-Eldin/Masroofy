@@ -10,7 +10,7 @@ import javax.swing.*;
 public class DashboardActivity extends JPanel {
 
     private JLabel tvAllowance, tvRemaining, tvDailyLimit, tvDailySpent, tvStatus;
-    private JLabel tvTodayRemaining;  // NEW: Show today's remaining limit
+    private JLabel tvTodayRemaining;
     private JProgressBar pbBudgetProgress;
     private final BudgetManager budgetManager;
     private ReportController reportController;
@@ -19,6 +19,11 @@ public class DashboardActivity extends JPanel {
     public DashboardActivity(BudgetManager manager) {
         this.budgetManager = manager;
         this.reportController = new ReportController(budgetManager);
+
+        // FIXED: Set alert callback here (View handles UI)
+        budgetManager.getAlertManager().setCallback((title, message) -> {
+            JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
+        });
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(new Color(10, 25, 47));
@@ -33,7 +38,7 @@ public class DashboardActivity extends JPanel {
         tvAllowance = new JLabel("Total Allowance: 0.00");
         tvRemaining = new JLabel("Remaining: 0.00");
         tvDailyLimit = new JLabel("Daily Limit: 0.00");
-        tvTodayRemaining = new JLabel("Today Remaining: 0.00");  // NEW
+        tvTodayRemaining = new JLabel("Today Remaining: 0.00");
         tvDailySpent = new JLabel("Spent Today: 0.00");
 
         applyWhiteForeground(tvStatus, tvAllowance, tvRemaining, tvDailyLimit, 
@@ -84,7 +89,7 @@ public class DashboardActivity extends JPanel {
         add(pbBudgetProgress);
         add(Box.createVerticalStrut(15));
         add(tvDailyLimit);
-        add(tvTodayRemaining);  // NEW
+        add(tvTodayRemaining);
         add(tvDailySpent);
         add(Box.createVerticalStrut(20));
         add(lblChartTitle);
@@ -110,11 +115,9 @@ public class DashboardActivity extends JPanel {
         tvDailyLimit.setText(String.format("Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
         tvDailySpent.setText(String.format("Spent Today: %.2f EGP", uiModel.getTotalSpent()));
         
-        // NEW: Show today's remaining daily limit
         double todayRemaining = budgetManager.getTodayRemainingDailyLimit();
         tvTodayRemaining.setText(String.format("Today Remaining: %.2f EGP", todayRemaining));
         
-        // Color the today remaining label based on status
         if (todayRemaining <= 0) {
             tvTodayRemaining.setForeground(Color.RED);
         } else if (todayRemaining < budgetManager.getFixedDailyLimit() * 0.2) {
@@ -126,10 +129,9 @@ public class DashboardActivity extends JPanel {
         int progress = Math.min(100, (int) uiModel.getSpendingPercentage());
         pbBudgetProgress.setValue(progress);
 
-        updateStatusColor(uiModel.getStatusColor());
-
-        // FIX: NO MORE PERSISTENT ALERT HERE!
-        // Alerts are now handled in ExpensesEntryActivity BEFORE saving
+        // FIXED: Get message and color from Model, not calculate here
+        tvStatus.setText(uiModel.getStatusMessage());
+        tvStatus.setForeground(uiModel.getStatusColor());
 
         Map<String, Double> categoryData = budgetManager.getPieChartData();
         if (spendingChart != null) {
@@ -138,22 +140,7 @@ public class DashboardActivity extends JPanel {
         }
     }
 
-    private void updateStatusColor(String color) {
-        switch (color.toLowerCase()) {
-            case "red":
-                tvStatus.setText("⚠️ Critical: Budget Exceeded!");
-                tvStatus.setForeground(Color.RED);
-                break;
-            case "orange":
-                tvStatus.setText("⚠️ Warning: 80% of budget used!");
-                tvStatus.setForeground(Color.ORANGE);
-                break;
-            default:
-                tvStatus.setText("✅ Your budget is on track");
-                tvStatus.setForeground(new Color(50, 205, 50));
-                break;
-        }
-    }
+    // REMOVED: updateStatusColor() - moved to DashboardModel
 
     private void applyWhiteForeground(JLabel... labels) {
         for (JLabel l : labels) l.setForeground(Color.WHITE);
@@ -168,4 +155,3 @@ public class DashboardActivity extends JPanel {
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 }
-
