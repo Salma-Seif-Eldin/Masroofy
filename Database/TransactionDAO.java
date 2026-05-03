@@ -2,30 +2,32 @@ package Database;
 
 import Models.Expense;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Date;
+import java.util.List;
 
 public class TransactionDAO {
 
+    // FIX: Added user_pin to INSERT because the table schema requires it (NOT NULL)
     public boolean saveExpense(Expense expense) {
-    String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id) VALUES (?, ?, ?, DATE('now'), ?)";
+        String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id, user_pin) " +
+                     "VALUES (?, ?, ?, DATE('now'), ?, ?)";
 
-    try (Connection conn = DatabaseManager.connect();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-        
-        pstmt.setDouble(1, expense.getAmount());
-        pstmt.setInt(2, expense.getCategoryId());
-        pstmt.setString(3, expense.getNotes());
-        pstmt.setInt(4, expense.getCycleId());
-        
-        pstmt.executeUpdate();
-        return true;
-    } catch (SQLException e) {
-        System.out.println("Error saving expense: " + e.getMessage());
-        return false;
+        try (Connection conn = DatabaseManager.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, expense.getAmount());
+            pstmt.setInt(2, expense.getCategoryId());
+            pstmt.setString(3, expense.getNotes());
+            pstmt.setInt(4, expense.getCycleId());
+            pstmt.setString(5, expense.getUserPin());  // FIX: include user_pin
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error saving expense: " + e.getMessage());
+            return false;
+        }
     }
-}
 
     public List<Expense> getAllExpenses() {
         List<Expense> list = new ArrayList<>();
@@ -34,7 +36,6 @@ public class TransactionDAO {
         try (Connection conn = DatabaseManager.connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 list.add(mapResultSetToExpense(rs));
             }
@@ -44,24 +45,23 @@ public class TransactionDAO {
         return list;
     }
 
-    public List<Expense> getFilteredExpenses(int categoryID, long start, long end) {
+    public List<Expense> getFilteredExpenses(int categoryID, String startDate, String endDate) {
         List<Expense> expenses = new ArrayList<>();
-        String sql = (categoryID == 0) 
+        // FIX: date column is TEXT "yyyy-MM-dd", compare as text strings
+        String sql = (categoryID == 0)
             ? "SELECT * FROM expenses WHERE date >= ? AND date <= ? ORDER BY date DESC"
             : "SELECT * FROM expenses WHERE category_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
 
         try (Connection conn = DatabaseManager.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
             if (categoryID == 0) {
-                pstmt.setLong(1, start);
-                pstmt.setLong(2, end);
+                pstmt.setString(1, startDate);
+                pstmt.setString(2, endDate);
             } else {
                 pstmt.setInt(1, categoryID);
-                pstmt.setLong(2, start);
-                pstmt.setLong(3, end);
+                pstmt.setString(2, startDate);
+                pstmt.setString(3, endDate);
             }
-
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 expenses.add(mapResultSetToExpense(rs));
@@ -77,12 +77,10 @@ public class TransactionDAO {
 
         try (Connection conn = DatabaseManager.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
             pstmt.setDouble(1, expense.getAmount());
             pstmt.setString(2, expense.getNotes());
             pstmt.setInt(3, expense.getCategoryId());
             pstmt.setInt(4, expense.getExpenseId());
-            
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error updating expense: " + e.getMessage());
@@ -95,7 +93,6 @@ public class TransactionDAO {
 
         try (Connection conn = DatabaseManager.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
             pstmt.setInt(1, id);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -104,17 +101,27 @@ public class TransactionDAO {
         }
     }
 
+    // FIX: date is stored as TEXT "yyyy-MM-dd" — parse it correctly instead of getLong()
     private Expense mapResultSetToExpense(ResultSet rs) throws SQLException {
-        Date date = new Date(rs.getLong("date"));
-        
         Expense e = new Expense(
             rs.getDouble("amount"),
             rs.getInt("category_id"),
             rs.getString("notes")
         );
         e.setExpenseId(rs.getInt("expense_id"));
-        e.setTimestamp(date);
         e.setCycleId(rs.getInt("cycle_id"));
+
+        String dateStr = rs.getString("date");
+        if (dateStr != null) {
+            try {
+                Date d = new SimpleDateFormat("yyyy-MM-dd").parse(dateStr);
+                e.setTimestamp(d);
+            } catch (Exception ex) {
+                e.setTimestamp(new Date());
+            }
+        } else {
+            e.setTimestamp(new Date());
+        }
         return e;
     }
 }

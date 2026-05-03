@@ -6,10 +6,9 @@ public class DashboardModel {
     private double totalSpent;
     private double safeDailyLimit;
     private double remainingBudget;
-    private Map<String, Double> categoryTotals; // For the Pie Chart
-    private String statusColor; // "Green", "Orange", or "Red" for alerts
+    private Map<String, Double> categoryTotals;
+    private String statusColor;
 
-    // Constructor to initialize all dashboard data at once
     public DashboardModel(double totalAllowance, double totalSpent, 
                           double safeDailyLimit, Map<String, Double> categoryTotals, 
                           String statusColor) {
@@ -21,7 +20,6 @@ public class DashboardModel {
         this.statusColor = statusColor;
     }
 
-    // Getters used by DashboardActivity to update the UI
     public double getTotalAllowance() { return totalAllowance; }
     public double getTotalSpent() { return totalSpent; }
     public double getSafeDailyLimit() { return safeDailyLimit; }
@@ -29,7 +27,6 @@ public class DashboardModel {
     public Map<String, Double> getCategoryTotals() { return categoryTotals; }
     public String getStatusColor() { return statusColor; }
     
-    // Helper to calculate percentage for the Pie Chart labels
     public double getSpendingPercentage() {
         if (totalAllowance <= 0) return 0;
         return (totalSpent / totalAllowance) * 100;

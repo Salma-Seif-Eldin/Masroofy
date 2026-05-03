@@ -1,20 +1,20 @@
 package Views;
 
 import Controllers.BudgetManager;
-import Controllers.ReportController;  
-import Models.BudgetCycle;
-import Models.DashboardModel; 
+import Controllers.ReportController;
+import Models.DashboardModel;
 import java.awt.*;
-import java.util.Map; // Added for category data
+import java.util.Map;
 import javax.swing.*;
 
 public class DashboardActivity extends JPanel {
-    
+
     private JLabel tvAllowance, tvRemaining, tvDailyLimit, tvDailySpent, tvStatus;
+    private JLabel tvTodayRemaining;  // NEW: Show today's remaining limit
     private JProgressBar pbBudgetProgress;
     private final BudgetManager budgetManager;
     private ReportController reportController;
-    private SpendingChart spendingChart; // Added from second file
+    private SpendingChart spendingChart;
 
     public DashboardActivity(BudgetManager manager) {
         this.budgetManager = manager;
@@ -24,45 +24,46 @@ public class DashboardActivity extends JPanel {
         setBackground(new Color(10, 25, 47));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        initViews(); 
-        refreshUI(); 
+        initViews();
+        refreshUI();
     }
 
     private void initViews() {
-        // 1. تهيئة الـ Labels
-        tvStatus = new JLabel("Checking budget status...");
+        tvStatus    = new JLabel("Checking budget status...");
         tvAllowance = new JLabel("Total Allowance: 0.00");
         tvRemaining = new JLabel("Remaining: 0.00");
-        tvDailyLimit = new JLabel("Safe Daily Limit: 0.00");
+        tvDailyLimit = new JLabel("Daily Limit: 0.00");
+        tvTodayRemaining = new JLabel("Today Remaining: 0.00");  // NEW
         tvDailySpent = new JLabel("Spent Today: 0.00");
-        
-        applyWhiteForeground(tvStatus, tvAllowance, tvRemaining, tvDailyLimit, tvDailySpent);
 
-        // 2. تهيئة الـ ProgressBar
+        applyWhiteForeground(tvStatus, tvAllowance, tvRemaining, tvDailyLimit, 
+                             tvTodayRemaining, tvDailySpent);
+
         pbBudgetProgress = new JProgressBar(0, 100);
         pbBudgetProgress.setStringPainted(true);
-        pbBudgetProgress.setForeground(new Color(212, 175, 55)); 
+        pbBudgetProgress.setForeground(new Color(212, 175, 55));
 
-        // 3. تهيئة الـ SpendingChart (Added from second file)
         spendingChart = new SpendingChart();
         spendingChart.setPreferredSize(new Dimension(400, 200));
         JLabel lblChartTitle = new JLabel("Spending by Category:");
         lblChartTitle.setForeground(Color.WHITE);
 
-        // 4. تهيئة الأزرار
-        JButton btnAddExpense = new JButton("Add Expense");
-        JButton btnHistory = new JButton("View History");
-        JButton btnReport = new JButton("Generate Report");
+        JButton btnAddExpense = new JButton("➕ Add Expense");
+        JButton btnHistory    = new JButton("📋 View History");
+        JButton btnReport     = new JButton("📊 Generate Report");
 
-        // 5. إعداد الـ Actions
+        styleButton(btnAddExpense);
+        styleButton(btnHistory);
+        styleButton(btnReport);
+
         btnAddExpense.addActionListener(e -> {
             ExpensesEntryActivity entry = new ExpensesEntryActivity(budgetManager);
             entry.setVisible(true);
             entry.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
+                public void windowClosed(java.awt.event.WindowEvent ev) {
                     budgetManager.loadExistingBudget();
-                    refreshUI(); 
+                    refreshUI();
                 }
             });
         });
@@ -71,10 +72,10 @@ public class DashboardActivity extends JPanel {
 
         btnReport.addActionListener(e -> {
             String report = reportController.generateSummaryReport();
-            JOptionPane.showMessageDialog(this, report, "Report Summary", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, report, "Report Summary",
+                JOptionPane.INFORMATION_MESSAGE);
         });
 
-        // 6. إضافة العناصر للـ Panel بترتيب منظم
         add(tvStatus);
         add(Box.createVerticalStrut(10));
         add(tvAllowance);
@@ -83,14 +84,12 @@ public class DashboardActivity extends JPanel {
         add(pbBudgetProgress);
         add(Box.createVerticalStrut(15));
         add(tvDailyLimit);
+        add(tvTodayRemaining);  // NEW
         add(tvDailySpent);
         add(Box.createVerticalStrut(20));
-        
-        // Adding the chart elements (Added from second file)
         add(lblChartTitle);
         add(spendingChart);
         add(Box.createVerticalStrut(20));
-
         add(btnAddExpense);
         add(Box.createVerticalStrut(10));
         add(btnHistory);
@@ -98,39 +97,44 @@ public class DashboardActivity extends JPanel {
         add(btnReport);
     }
 
-    private void refreshUI() {
+    public void refreshUI() {
         DashboardModel uiModel = budgetManager.getDashboardData();
-        
+
         if (uiModel == null) {
             tvStatus.setText("No active cycle found.");
             return;
         }
 
-        // تحديث النصوص مباشرة من الـ Model
         tvAllowance.setText(String.format("Total Allowance: %.2f EGP", uiModel.getTotalAllowance()));
         tvRemaining.setText(String.format("Remaining: %.2f EGP", uiModel.getRemainingBudget()));
-        tvDailyLimit.setText(String.format("Safe Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
+        tvDailyLimit.setText(String.format("Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
         tvDailySpent.setText(String.format("Spent Today: %.2f EGP", uiModel.getTotalSpent()));
-
-        // تحديث الـ ProgressBar
-        double spentPercent = uiModel.getSpendingPercentage();
-        pbBudgetProgress.setValue((int) spentPercent);
         
-        // تحديث لون الحالة بناءً على ما حدده الـ Model
+        // NEW: Show today's remaining daily limit
+        double todayRemaining = budgetManager.getTodayRemainingDailyLimit();
+        tvTodayRemaining.setText(String.format("Today Remaining: %.2f EGP", todayRemaining));
+        
+        // Color the today remaining label based on status
+        if (todayRemaining <= 0) {
+            tvTodayRemaining.setForeground(Color.RED);
+        } else if (todayRemaining < budgetManager.getFixedDailyLimit() * 0.2) {
+            tvTodayRemaining.setForeground(Color.ORANGE);
+        } else {
+            tvTodayRemaining.setForeground(new Color(50, 205, 50));
+        }
+
+        int progress = Math.min(100, (int) uiModel.getSpendingPercentage());
+        pbBudgetProgress.setValue(progress);
+
         updateStatusColor(uiModel.getStatusColor());
 
-        // --- Integrated from Second File ---
-        
-        // Update Chart Data
+        // FIX: NO MORE PERSISTENT ALERT HERE!
+        // Alerts are now handled in ExpensesEntryActivity BEFORE saving
+
         Map<String, Double> categoryData = budgetManager.getPieChartData();
         if (spendingChart != null) {
             spendingChart.setData(categoryData);
-            spendingChart.repaint(); 
-        }
-
-        // Daily Limit Alert
-        if (uiModel.getTotalSpent() > uiModel.getSafeDailyLimit()) {
-            JOptionPane.showMessageDialog(this, "You have exceeded your daily limit!", "Budget Alert", JOptionPane.WARNING_MESSAGE);
+            spendingChart.repaint();
         }
     }
 
@@ -146,7 +150,7 @@ public class DashboardActivity extends JPanel {
                 break;
             default:
                 tvStatus.setText("✅ Your budget is on track");
-                tvStatus.setForeground(new Color(50, 205, 50)); 
+                tvStatus.setForeground(new Color(50, 205, 50));
                 break;
         }
     }
@@ -154,4 +158,14 @@ public class DashboardActivity extends JPanel {
     private void applyWhiteForeground(JLabel... labels) {
         for (JLabel l : labels) l.setForeground(Color.WHITE);
     }
+
+    private void styleButton(JButton btn) {
+        btn.setBackground(new Color(212, 175, 55));
+        btn.setForeground(Color.BLACK);
+        btn.setFont(new Font("Arial", Font.BOLD, 14));
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+    }
 }
+

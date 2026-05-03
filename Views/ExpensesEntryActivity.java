@@ -1,155 +1,155 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package Views;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 
+import javax.swing.*;
 import Controllers.BudgetManager;
 import Controllers.ExpenseController;
+import Controllers.ExpenseController.ExpenseResult;
+import Database.TransactionDAO;
 
-/**
- *
- * @author TOP 10
- */
-public class ExpensesEntryActivity extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ExpensesEntryActivity.class.getName());
+public class ExpensesEntryActivity extends JFrame {
 
     private BudgetManager budgetManager;
+
+    private JLabel jLabel1, jLabel2, jLabel3;
+    private JButton jButton1;
+    private JComboBox<String> jComboBox1;
+    private JTextField jTextField1, jTextField2;
 
     public ExpensesEntryActivity(BudgetManager manager) {
         this.budgetManager = manager;
         initComponents();
-        populateCategories(); // Added from second file to ensure list is not empty
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Ensure it triggers 'windowClosed'
+        populateCategories();
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        jLabel1   = new JLabel("Amount");
+        jLabel2   = new JLabel("Category");
+        jLabel3   = new JLabel("Notes");
+        jButton1  = new JButton("Save Expense");
+        jComboBox1 = new JComboBox<>();
+        jTextField1 = new JTextField(15);
+        jTextField2 = new JTextField(15);
 
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
-        jComboBox1 = new javax.swing.JComboBox<>();
-        jTextField1 = new javax.swing.JTextField();
-        jLabel3 = new javax.swing.JLabel();
-        jTextField2 = new javax.swing.JTextField();
-
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setBackground(new java.awt.Color(203, 229, 255));
-        setForeground(java.awt.Color.lightGray);
+        setTitle("Add Expense");
+        setSize(400, 320);
+        setLocationRelativeTo(null);
+        setResizable(false);
+        getContentPane().setBackground(new java.awt.Color(203, 229, 255));
 
         jLabel1.setForeground(new java.awt.Color(0, 0, 102));
-        jLabel1.setText("Amount");
-
         jLabel2.setForeground(new java.awt.Color(0, 0, 102));
-        jLabel2.setText("Categeory");
-
+        jLabel3.setForeground(new java.awt.Color(0, 0, 102));
         jButton1.setForeground(new java.awt.Color(0, 0, 102));
-        jButton1.setText("Save Expense");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
-            }
-        });
 
         jComboBox1.setBackground(new java.awt.Color(227, 239, 252));
         jComboBox1.setForeground(new java.awt.Color(0, 0, 102));
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
         jTextField1.setBackground(new java.awt.Color(227, 239, 252));
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
-            }
-        });
-
-        jLabel3.setForeground(new java.awt.Color(0, 0, 102));
-        jLabel3.setText("Notes");
-
         jTextField2.setBackground(new java.awt.Color(227, 239, 252));
+
+        jButton1.addActionListener(e -> jButton1ActionPerformed());
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
+        layout.setAutoCreateGaps(true);
+        layout.setAutoCreateContainerGaps(true);
+
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(46, 46, 46)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jButton1)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(33, 33, 33)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 155, Short.MAX_VALUE)
-                            .addComponent(jTextField2))))
-                .addContainerGap(109, Short.MAX_VALUE))
+            layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup()
+                    .addComponent(jLabel1)
+                    .addComponent(jLabel2)
+                    .addComponent(jLabel3)
+                    .addComponent(jButton1))
+                .addGroup(layout.createParallelGroup()
+                    .addComponent(jTextField1)
+                    .addComponent(jComboBox1)
+                    .addComponent(jTextField2))
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(54, 54, 54)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(35, 35, 35)
+            layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2))
-                .addGap(30, 30, 30)
+                    .addComponent(jLabel1).addComponent(jTextField1))
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(35, 35, 35)
+                    .addComponent(jLabel2).addComponent(jComboBox1))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3).addComponent(jTextField2))
                 .addComponent(jButton1)
-                .addContainerGap(50, Short.MAX_VALUE))
         );
 
         pack();
     }
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {
+    private void jButton1ActionPerformed() {
         try {
             String amountText = jTextField1.getText().trim();
-            
-            // Added validation check from second file
             if (amountText.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Please enter an amount.");
                 return;
             }
 
             double amount = Double.parseDouble(amountText);
+            if (amount <= 0) {
+                JOptionPane.showMessageDialog(this, "Amount must be greater than 0.");
+                return;
+            }
+
             String note = jTextField2.getText().trim();
-            String selectedCategory = jComboBox1.getSelectedItem().toString();
+            String selectedCategory = (String) jComboBox1.getSelectedItem();
+            if (selectedCategory == null) {
+                JOptionPane.showMessageDialog(this, "Please select a category.");
+                return;
+            }
+
+            int categoryId = getCategoryId(selectedCategory);
+
+            ExpenseController controller = new ExpenseController(new TransactionDAO(), budgetManager);
             
-            int categoryId = 1;
-            if (selectedCategory.equals("Food")) categoryId = 1;
-            else if (selectedCategory.equals("Transport")) categoryId = 2;
-            else if (selectedCategory.equals("Shopping")) categoryId = 3;
-            else if (selectedCategory.equals("Health")) categoryId = 4;
-            else if (selectedCategory.equals("Education")) categoryId = 5;
-            else if (selectedCategory.equals("Entertainment")) categoryId = 6;
+            // ======================================================================
+            // Process expense - validation happens INSIDE the controller
+            // ======================================================================
+            ExpenseResult result = controller.processExpense(amount, categoryId, note);
 
-            ExpenseController controller = new ExpenseController(new Database.TransactionDAO(), budgetManager);
-            boolean success = controller.processExpense(amount, categoryId, note);
-
-            if (success) {
-                JOptionPane.showMessageDialog(this, "✅ Expense Saved Successfully!");
-                this.dispose();
+            if (result.isSuccess()) {
+                // Show success message
+                JOptionPane.showMessageDialog(this, "✅ " + result.getMessage(), 
+                    "Success", JOptionPane.INFORMATION_MESSAGE);
+                
+                // Show warning AFTER success (if any) - user clicks OK to dismiss
+                if (result.hasWarning()) {
+                    JOptionPane.showMessageDialog(this, result.getWarning(), 
+                        "Budget Warning", JOptionPane.WARNING_MESSAGE);
+                }
+                
+                this.dispose();  // triggers windowClosed in DashboardActivity
+                
             } else {
-                JOptionPane.showMessageDialog(this, "❌ Error: Could not save expense.", "Error", JOptionPane.ERROR_MESSAGE);
+                // ======================================================================
+                // EXPENSE WAS NOT SAVED - Show appropriate error
+                // ======================================================================
+                int messageType = JOptionPane.ERROR_MESSAGE;
+                String title = "Error";
+                
+                if ("daily_limit_exceeded".equals(result.getRejectionType())) {
+                    messageType = JOptionPane.WARNING_MESSAGE;
+                    title = "Daily Limit Exceeded";
+                } else if ("budget_exceeded".equals(result.getRejectionType())) {
+                    messageType = JOptionPane.ERROR_MESSAGE;
+                    title = "Budget Exceeded";
+                }
+                
+                JOptionPane.showMessageDialog(this, 
+                    "❌ " + result.getMessage(), 
+                    title, messageType);
+                
+                // Clear amount field and focus for retry
+                jTextField1.setText("");
+                jTextField1.requestFocus();
             }
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid amount.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please enter a valid number.",
+                "Input Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -163,17 +163,15 @@ public class ExpensesEntryActivity extends javax.swing.JFrame {
         jComboBox1.addItem("Entertainment");
     }
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {
-        // TODO add your handling code here:
+    private int getCategoryId(String name) {
+        return switch (name) {
+            case "Food"          -> 1;
+            case "Transport"     -> 2;
+            case "Shopping"      -> 3;
+            case "Health"        -> 4;
+            case "Education"     -> 5;
+            case "Entertainment" -> 6;
+            default              -> 1;
+        };
     }
-
-    // Variables declaration - do not modify
-    private javax.swing.JButton jButton1;
-    private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
-    // End of variables declaration
 }
