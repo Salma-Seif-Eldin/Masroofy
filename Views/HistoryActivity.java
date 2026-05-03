@@ -9,28 +9,30 @@ import Controllers.BudgetManager;
 import Controllers.ExpenseController;
 import Database.TransactionDAO;
 
-
 public class HistoryActivity extends JFrame {
     private JTable expenseTable;
     private DefaultTableModel tableModel;
     private final BudgetManager budgetManager;
     private final ExpenseController expenseController;
+    private JComboBox<String> categoryFilter;
+    private JTextField startDateField;
+    private JTextField endDateField;
+    private DashboardActivity dashboard; // مرجع للواجهة الرئيسية
 
-    public HistoryActivity(BudgetManager manager) {
+    public HistoryActivity(BudgetManager manager, DashboardActivity dashboard) {
         this.budgetManager = manager;
+        this.dashboard = dashboard;
         this.expenseController = new ExpenseController(new TransactionDAO(), budgetManager);
-
+        
         setTitle("Expense History - User: " + budgetManager.getCurrentPin());
-        setSize(700, 450);
+        setSize(800, 550);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
         String[] columnNames = {"ID", "Amount (EGP)", "Category", "Notes", "Date"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            public boolean isCellEditable(int row, int column) { return false; }
         };
         
         expenseTable = new JTable(tableModel);
@@ -40,56 +42,135 @@ public class HistoryActivity extends JFrame {
 
     private void setupUI() {
         setLayout(new BorderLayout());
-        
-        // تخصيص شكل الجدول
+
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.setBorder(BorderFactory.createTitledBorder("Filter Transactions"));
+
+        categoryFilter = new JComboBox<>(new String[]{"All", "Food", "Transport", "Shopping", "Health", "Education", "Entertainment", "Other"});
+        startDateField = new JTextField(10); // Format: yyyy-MM-dd
+        endDateField = new JTextField(10);
+        JButton btnApplyFilter = new JButton("Apply Filter");
+
+        filterPanel.add(new JLabel("Category:"));
+        filterPanel.add(categoryFilter);
+        filterPanel.add(new JLabel("From (yyyy-mm-dd):"));
+        filterPanel.add(startDateField);
+        filterPanel.add(new JLabel("To:"));
+        filterPanel.add(endDateField);
+        filterPanel.add(btnApplyFilter);
+
+        add(filterPanel, BorderLayout.NORTH);
+
         expenseTable.setFillsViewportHeight(true);
         expenseTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        
-        JScrollPane scrollPane = new JScrollPane(expenseTable);
-        add(scrollPane, BorderLayout.CENTER);
+        add(new JScrollPane(expenseTable), BorderLayout.CENTER);
 
-        // أزرار التحكم
         JPanel buttonPanel = new JPanel();
+        JButton btnEdit = new JButton("Edit Selected");
         JButton btnDelete = new JButton("Delete Selected");
-        JButton btnRefresh = new JButton("Refresh");
+        JButton btnRefresh = new JButton("Refresh All");
 
         btnDelete.setBackground(new Color(200, 50, 50));
         btnDelete.setForeground(Color.WHITE);
+        btnEdit.setBackground(new Color(50, 150, 50));
+        btnEdit.setForeground(Color.WHITE);
 
-        // منطق الحذف
+        btnApplyFilter.addActionListener(e -> applyFilterLogic());
+
         btnDelete.addActionListener(e -> {
-            int selectedRow = expenseTable.getSelectedRow();
-            if (selectedRow != -1) {
-                int id = (int) tableModel.getValueAt(selectedRow, 0);
-                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this expense?");
-                
+            int row = expenseTable.getSelectedRow();
+            if (row != -1) {
+                int id = (int) tableModel.getValueAt(row, 0);
+                int confirm = JOptionPane.showConfirmDialog(this, "Delete this expense?");
                 if (confirm == JOptionPane.YES_OPTION) {
                     if (expenseController.modifyTransaction(id, "Delete", null)) {
-                        tableModel.removeRow(selectedRow);
-                        JOptionPane.showMessageDialog(this, "Expense deleted successfully.");
+                        loadExpenses();
+                        JOptionPane.showMessageDialog(this, "Deleted successfully.");
+                    }
+                }
+            }
+        });
+        
+        btnEdit.addActionListener(e -> {
+            int selectedRow = expenseTable.getSelectedRow();
+            
+            if (selectedRow != -1) {
+                int id = (int) tableModel.getValueAt(selectedRow, 0);
+                double currentAmount = Double.parseDouble(tableModel.getValueAt(selectedRow, 1).toString());
+                String currentCategory = tableModel.getValueAt(selectedRow, 2).toString();
+                String currentNotes = tableModel.getValueAt(selectedRow, 3).toString();
+
+                JTextField amountField = new JTextField(String.valueOf(currentAmount));
+                JTextField notesField = new JTextField(currentNotes);
+                String[] categories = {"Food", "Transport", "Shopping", "Health", "Education", "Entertainment", "Other"};
+                JComboBox<String> catBox = new JComboBox<>(categories);
+                catBox.setSelectedItem(currentCategory);
+
+                Object[] message = {
+                    "New Amount (EGP):", amountField,
+                    "Category:", catBox,
+                    "Notes:", notesField
+                };
+
+                int option = JOptionPane.showConfirmDialog(this, message, "Edit Transaction", JOptionPane.OK_CANCEL_OPTION);
+                
+                if (option == JOptionPane.OK_OPTION) {
+                    try {
+                        double newAmount = Double.parseDouble(amountField.getText());
+                        int newCatId = catBox.getSelectedIndex() + 1;
+                        String newNotes = notesField.getText();
+
+                        Expense updatedData = new Expense(newAmount, newCatId, newNotes);
+
+                        if (expenseController.modifyTransaction(id, "Edit", updatedData)) {
+                            loadExpenses(); 
+                            if (dashboard != null) {
+                                dashboard.refreshUI(); 
+                            }
+                            JOptionPane.showMessageDialog(this, "Transaction updated and Dashboard refreshed!");
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Failed to update transaction.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(this, "Please enter a valid numeric amount.");
                     }
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Please select an expense to delete.");
+                JOptionPane.showMessageDialog(this, "Please select a row to edit.");
             }
         });
 
         btnRefresh.addActionListener(e -> loadExpenses());
 
         buttonPanel.add(btnRefresh);
+        buttonPanel.add(btnEdit);
         buttonPanel.add(btnDelete);
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private void loadExpenses() {
-        tableModel.setRowCount(0);
-        // جلب البيانات المفلترة للمستخدم الحالي من الـ Manager
-        List<Expense> expenses = budgetManager.getExpenses();
-        
-        if (expenses == null || expenses.isEmpty()) {
-            System.out.println("No history found for user: " + budgetManager.getCurrentPin());
-            return;
+    private void applyFilterLogic() {
+        int catID = categoryFilter.getSelectedIndex();
+        String start = startDateField.getText();
+        String end = endDateField.getText();
+
+        // استدعاء الكنترولر لجلب البيانات المفلترة
+        List<Expense> filtered = expenseController.filterHistory(catID, start, end);
+
+        if (filtered != null && !filtered.isEmpty()) {
+            updateTableData(filtered); // notifyDataSetChanged
+        } else {
+            tableModel.setRowCount(0);
+            JOptionPane.showMessageDialog(this, "No transactions found for these filters.");
         }
+    }
+
+    private void loadExpenses() {
+        updateTableData(budgetManager.getExpenses());
+    }
+
+    private void updateTableData(List<Expense> expenses) {
+        tableModel.setRowCount(0);
+        if (expenses == null) return;
 
         for (Expense exp : expenses) {
             tableModel.addRow(new Object[]{
@@ -102,7 +183,6 @@ public class HistoryActivity extends JFrame {
         }
     }
 
-    // ميثود مساعدة لتحويل الـ ID لاسم نصي
     private String getCategoryName(int id) {
         return switch (id) {
             case 1 -> "Food";

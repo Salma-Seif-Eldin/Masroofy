@@ -68,7 +68,7 @@ public class DashboardActivity extends JPanel {
             });
         });
 
-        btnHistory.addActionListener(e -> new HistoryActivity(budgetManager).setVisible(true));
+        btnHistory.addActionListener(e -> new HistoryActivity(budgetManager, this).setVisible(true));
 
         btnReport.addActionListener(e -> {
             String report = reportController.generateSummaryReport();

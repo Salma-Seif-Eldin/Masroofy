@@ -72,21 +72,23 @@ public class TransactionDAO {
         return expenses;
     }
 
-    public boolean updateExpense(Expense expense) {
-        String sql = "UPDATE expenses SET amount = ?, notes = ?, category_id = ? WHERE expense_id = ?";
-
-        try (Connection conn = DatabaseManager.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setDouble(1, expense.getAmount());
-            pstmt.setString(2, expense.getNotes());
-            pstmt.setInt(3, expense.getCategoryId());
-            pstmt.setInt(4, expense.getExpenseId());
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating expense: " + e.getMessage());
-            return false;
-        }
+    public boolean updateExpense(int id, double amount, int catId, String notes) {
+    String sql = "UPDATE expenses SET amount = ?, category_id = ?, notes = ? WHERE expense_id = ?";
+    try (Connection conn = DatabaseManager.connect();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        pstmt.setDouble(1, amount);
+        pstmt.setInt(2, catId);
+        pstmt.setString(3, notes);
+        pstmt.setInt(4, id);
+        
+        int affectedRows = pstmt.executeUpdate();
+        return affectedRows > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
     }
+}
 
     public boolean deleteExpense(int id) {
         String sql = "DELETE FROM expenses WHERE expense_id = ?";

@@ -77,22 +77,27 @@ public class ExpenseController {
         return budgetController.getExpenses();
     }
 
-    public boolean modifyTransaction(int id, String action, Expense newData) {
-        boolean success = false;
-
-        if ("Delete".equalsIgnoreCase(action)) {
-            success = transactionDAO.deleteExpense(id);
-        } else if ("Edit".equalsIgnoreCase(action)) {
-            if (newData == null || newData.getAmount() <= 0) return false;
-            success = transactionDAO.updateExpense(newData);
+    public boolean modifyTransaction(int id, String action, Expense updatedData) {
+    if (action.equals("Edit") && updatedData != null) {
+        // 1. تنفيذ التعديل في قاعدة البيانات
+        boolean success = transactionDAO.updateExpense(id, updatedData.getAmount(), 
+                                                       updatedData.getCategoryId(), 
+                                                       updatedData.getNotes());
+        
+        if (success) {
+            // 2. تحديث البيانات في الـ BudgetManager لتعكس على الـ Dashboard فوراً
+            budgetController.loadExistingBudget(); 
+            return true;
         }
-
+    } else if (action.equals("Delete")) {
+        boolean success = transactionDAO.deleteExpense(id);
         if (success) {
             budgetController.loadExistingBudget();
+            return true;
         }
-        return success;
     }
-
+    return false;
+}
     // ======================================================================
     // Result class - FIXED: Only TWO unique constructors
     // ======================================================================
@@ -124,4 +129,8 @@ public class ExpenseController {
         public String getRejectionType() { return rejectionType; }
         public boolean hasWarning() { return warning != null && !warning.isEmpty(); }
     }
+    public List<Expense> filterHistory(int categoryID, String startDate, String endDate) {
+    // استدعاء ميثود الـ DAO
+    return transactionDAO.getFilteredExpenses(categoryID, startDate, endDate);
+}
 }
