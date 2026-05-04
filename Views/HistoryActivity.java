@@ -7,7 +7,6 @@ import java.util.List;
 import Models.Expense;
 import Controllers.BudgetManager;
 import Controllers.ExpenseController;
-import Database.TransactionDAO;
 
 public class HistoryActivity extends JFrame {
     private JTable expenseTable;
@@ -17,7 +16,7 @@ public class HistoryActivity extends JFrame {
     private JComboBox<String> categoryFilter;
     private JTextField startDateField;
     private JTextField endDateField;
-    private DashboardActivity dashboard; // مرجع للواجهة الرئيسية
+    private DashboardActivity dashboard;
 
     public HistoryActivity(BudgetManager manager, DashboardActivity dashboard) {
         this.budgetManager = manager;
@@ -47,7 +46,7 @@ public class HistoryActivity extends JFrame {
         filterPanel.setBorder(BorderFactory.createTitledBorder("Filter Transactions"));
 
         categoryFilter = new JComboBox<>(new String[]{"All", "Food", "Transport", "Shopping", "Health", "Education", "Entertainment", "Other"});
-        startDateField = new JTextField(10); // Format: yyyy-MM-dd
+        startDateField = new JTextField(10);
         endDateField = new JTextField(10);
         JButton btnApplyFilter = new JButton("Apply Filter");
 
@@ -86,6 +85,7 @@ public class HistoryActivity extends JFrame {
                     if (expenseController.modifyTransaction(id, "Delete", null)) {
                         loadExpenses();
                         JOptionPane.showMessageDialog(this, "Deleted successfully.");
+                        dashboard.refreshUI();
                     }
                 }
             }
@@ -153,11 +153,10 @@ public class HistoryActivity extends JFrame {
         String start = startDateField.getText();
         String end = endDateField.getText();
 
-        // استدعاء الكنترولر لجلب البيانات المفلترة
         List<Expense> filtered = expenseController.filterHistory(catID, start, end);
 
         if (filtered != null && !filtered.isEmpty()) {
-            updateTableData(filtered); // notifyDataSetChanged
+            updateTableData(filtered);
         } else {
             tableModel.setRowCount(0);
             JOptionPane.showMessageDialog(this, "No transactions found for these filters.");
@@ -184,7 +183,6 @@ public class HistoryActivity extends JFrame {
     }
 
     private String getCategoryName(int id) {
-        // FIXED: Use Category model
         return Models.Category.getNameById(id);
     }
 }

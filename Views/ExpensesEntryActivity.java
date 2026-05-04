@@ -4,7 +4,6 @@ import javax.swing.*;
 import Controllers.BudgetManager;
 import Controllers.ExpenseController;
 import Controllers.ExpenseController.ExpenseResult;
-import Database.TransactionDAO;
 
 public class ExpensesEntryActivity extends JFrame {
 
@@ -104,29 +103,22 @@ public class ExpensesEntryActivity extends JFrame {
             int categoryId = getCategoryId(selectedCategory);
 
             ExpenseController controller = ExpenseController.createFor(budgetManager);
-            
-            // ======================================================================
-            // Process expense - validation happens INSIDE the controller
-            // ======================================================================
+
             ExpenseResult result = controller.processExpense(amount, categoryId, note);
 
             if (result.isSuccess()) {
-                // Show success message
                 JOptionPane.showMessageDialog(this, "✅ " + result.getMessage(), 
                     "Success", JOptionPane.INFORMATION_MESSAGE);
                 
-                // Show warning AFTER success (if any) - user clicks OK to dismiss
                 if (result.hasWarning()) {
                     JOptionPane.showMessageDialog(this, result.getWarning(), 
                         "Budget Warning", JOptionPane.WARNING_MESSAGE);
                 }
                 
-                this.dispose();  // triggers windowClosed in DashboardActivity
+                this.dispose();
                 
             } else {
-                // ======================================================================
-                // EXPENSE WAS NOT SAVED - Show appropriate error
-                // ======================================================================
+
                 int messageType = JOptionPane.ERROR_MESSAGE;
                 String title = "Error";
                 
@@ -142,7 +134,6 @@ public class ExpensesEntryActivity extends JFrame {
                     "❌ " + result.getMessage(), 
                     title, messageType);
                 
-                // Clear amount field and focus for retry
                 jTextField1.setText("");
                 jTextField1.requestFocus();
             }
@@ -155,14 +146,12 @@ public class ExpensesEntryActivity extends JFrame {
 
     private void populateCategories() {
         jComboBox1.removeAllItems();
-        // FIXED: Use Category model
         for (String name : Models.Category.getAllNames()) {
             jComboBox1.addItem(name);
         }
     }
 
      private int getCategoryId(String name) {
-        // FIXED: Use Category model
         return Models.Category.getIdByName(name);
     }
 }

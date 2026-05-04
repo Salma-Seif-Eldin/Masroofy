@@ -20,61 +20,32 @@ public class ExpenseController {
         return new ExpenseController(new TransactionDAO(), budgetManager);
     }
 
-    public ExpenseResult processExpense(double amount, int category_id, String note) {
-        if (amount <= 0) {
-            return new ExpenseResult(false, "Amount must be greater than 0.", "invalid_amount");
-        }
-        
-        if (budgetController.getCurrentCycle() == null) {
-            return new ExpenseResult(false, "No active budget cycle.", "no_cycle");
-        }
 
-        String rejectionReason = budgetController.getExpenseRejectionReason(amount);
-        
-        if (rejectionReason != null) {
-            switch (rejectionReason) {
-                case "budget":
-                    double remainingBudget = budgetController.getRemainingBudget();
-                    return new ExpenseResult(false, 
-                        String.format("Cannot add EGP %.2f. Only EGP %.2f remaining in total budget!", 
-                            amount, remainingBudget), 
-                        "budget_exceeded");
-                    
-                case "daily_limit":
-                    double todayRemaining = budgetController.getTodayRemainingDailyLimit();
-                    double dailyLimit = budgetController.getFixedDailyLimit();
-                    return new ExpenseResult(false, 
-                        String.format("Cannot add EGP %.2f. You only have EGP %.2f remaining today (Daily limit: EGP %.2f)!", 
-                            amount, todayRemaining, dailyLimit), 
-                        "daily_limit_exceeded");
-                    
-                default:
-                    return new ExpenseResult(false, "Cannot add this expense.", rejectionReason);
-            }
-        }
-
-        Expense newExpense = new Expense(amount, category_id, note);
-        newExpense.setCycleId(budgetController.getCurrentCycle().getCycleId());
-        newExpense.setUserPin(budgetController.getCurrentPin());
-
-        boolean isSaved = transactionDAO.saveExpense(newExpense);
-
-        if (isSaved) {
-            budgetController.loadExistingBudget();
-            
-            double pct = budgetController.getSpentPercentage();
-            String warning = null;
-            if (pct >= 100) {
-                warning = "🚨 WARNING: You have exhausted your entire budget!";
-            } else if (pct >= 80) {
-                warning = String.format("⚠️ WARNING: You have used %.1f%% of your budget!", pct);
-            }
-            
-            return new ExpenseResult(true, "Expense saved successfully!", warning, null);
-        } else {
-            return new ExpenseResult(false, "Database error: Could not save expense.", "db_error");
-        }
+public ExpenseResult processExpense(double amount, int category_id, String note) {
+    if (amount <= 0) {
+        return new ExpenseResult(false, "Please enter a valid amount greater than zero.", "invalid_amount");
     }
+
+    String rejectionReason = budgetController.getExpenseRejectionReason(amount);
+    
+    if ("total_budget_exhausted".equals(rejectionReason)) {
+        return new ExpenseResult(false, 
+            "Error: Cannot add expense. The requested amount is greater than your remaining total budget!", 
+            "total_exceeded");
+    }
+
+    Expense exp = new Expense(amount, category_id, note);
+    exp.setCycleId(budgetController.getCurrentCycle().getCycleId());
+    exp.setUserPin(budgetController.getCurrentPin());
+
+    boolean saved = transactionDAO.saveExpense(exp);
+    if (saved) {
+        budgetController.addExpense(exp); 
+        return new ExpenseResult(true, "Transaction saved successfully", null);
+    } else {
+        return new ExpenseResult(false, "Failed to save transaction in database", "db_error");
+    }
+}
 
     public List<Expense> loadHistory() {
         return budgetController.getExpenses();

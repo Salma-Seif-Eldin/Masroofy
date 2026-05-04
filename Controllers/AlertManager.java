@@ -18,7 +18,7 @@ public class AlertManager {
 
     public AlertManager() {
         this.lastAlertSent = null;
-        this.permissionsGranted = false;
+        this.permissionsGranted = true;
     }
 
     public boolean requestPermissions() {
@@ -27,26 +27,30 @@ public class AlertManager {
         return true;
     }
 
-    public void monitorBudgetTotalSpent(double totalSpent, double totalAllowance) {
-        if (!permissionsGranted) return;
-        if (totalAllowance <= 0) return;
-        double spentPercentage = (totalSpent / totalAllowance) * 100;
-        if (spentPercentage >= 100.0) {
-            triggerAlert("Budget Exceeded", "You have spent your entire budget!");
-        } else if (spentPercentage >= 80.0) {
-            triggerAlert("Budget Warning",
-                "You have spent " + String.format("%.1f", spentPercentage) + "% of your budget!");
-        }
-    }
+    // Inside AlertManager.java
 
-    public void monitorDailyLimit(double todaySpent, double dailyLimit) {
-        if (!permissionsGranted) return;
-        if (dailyLimit <= 0) return;
-        if (todaySpent > dailyLimit) {
-            triggerAlert("Daily Limit Exceeded",
-                "You exceeded your daily limit of " + String.format("EGP %.2f", dailyLimit));
-        }
+
+public void monitorBudgetTotalSpent(double totalSpent, double totalAllowance) {
+    if (!permissionsGranted || totalAllowance <= 0) return;
+    double spentPercentage = (totalSpent / totalAllowance) * 100;
+
+    if (spentPercentage >= 100.0) {
+        triggerAlert("Total Budget Reached", "Error: You have reached 100% of your total budget!");
+    } else if (spentPercentage >= 80.0) {
+        triggerAlert("Total Budget Warning", "Warning: You have spent more than 80% of your total budget.");
     }
+}
+
+public void monitorDailyLimit(double todaySpent, double dailyLimit) {
+    if (!permissionsGranted || dailyLimit <= 0) return;
+    double dailyPercentage = (todaySpent / dailyLimit) * 100;
+
+    if (dailyPercentage >= 100.0) {
+        triggerAlert("Daily Limit Exceeded", "Error: You have exceeded your daily limit, but you can still add more if you wish.");
+    } else if (dailyPercentage >= 80.0) {
+        triggerAlert("Daily Limit Warning", "Warning: You have spent more than 80% of your daily limit.");
+    }
+}
 
     public void triggerAlert(double percentageReached) {
         if (shouldSuppressAlert()) return;
@@ -84,4 +88,5 @@ public class AlertManager {
             System.out.println("[ALERT] " + title + ": " + message);
         }
     }
+    
 }

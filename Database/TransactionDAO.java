@@ -11,24 +11,28 @@ public class TransactionDAO {
 
     // FIX: Added user_pin to INSERT because the table schema requires it (NOT NULL)
     public boolean saveExpense(Expense expense) {
-        String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id, user_pin) " +
-                     "VALUES (?, ?, ?, DATE('now'), ?, ?)";
+    // Use 6 placeholders to match the 6 columns
+    String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id, user_pin) " +
+                 "VALUES (?, ?, ?, Date('now'), ?, ?)";
 
-        try (Connection conn = DatabaseManager.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setDouble(1, expense.getAmount());
-            pstmt.setInt(2, expense.getCategoryId());
-            pstmt.setString(3, expense.getNotes());
-            pstmt.setInt(4, expense.getCycleId());
-            pstmt.setString(5, expense.getUserPin());  // FIX: include user_pin
-            pstmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            System.out.println("Error saving expense: " + e.getMessage());
-            return false;
-        }
+    try (Connection conn = DatabaseManager.connect();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        pstmt.setDouble(1, expense.getAmount());
+        pstmt.setInt(2, expense.getCategoryId());
+        pstmt.setString(3, expense.getNotes());
+        
+        // Use Java to format the date so it matches the parser in loadExistingBudget
+        
+        pstmt.setInt(4, expense.getCycleId());
+        pstmt.setString(5, expense.getUserPin());
+        
+        return pstmt.executeUpdate() > 0;
+    } catch (SQLException e) {
+        System.out.println("Error saving expense: " + e.getMessage());
+        return false;
     }
-
+}
     public List<Expense> getAllExpenses() {
         List<Expense> list = new ArrayList<>();
         String sql = "SELECT * FROM expenses ORDER BY date DESC";

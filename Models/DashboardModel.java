@@ -4,32 +4,31 @@ import java.awt.Color;
 import java.util.Map;
 
 public class DashboardModel {
-    private double totalAllowance;
-    private double totalSpent;
-    private double safeDailyLimit;
-    private double remainingBudget;
-    private Map<String, Double> categoryTotals;
-    private String statusColorKey;
+    private final double totalAllowance;
+    private final double totalSpentCycle; // New: Total for the whole month/cycle
+    private final double dailySpent;      // Today only
+    private final double safeDailyLimit;
+    private final Map<String, Double> categoryTotals;
+    private final String statusColorKey;
 
-    public DashboardModel(double totalAllowance, double totalSpent, 
+    public DashboardModel(double totalAllowance, double totalSpentCycle, double dailySpent, 
                           double safeDailyLimit, Map<String, Double> categoryTotals, 
                           String statusColorKey) {
         this.totalAllowance = totalAllowance;
-        this.totalSpent = totalSpent;
+        this.totalSpentCycle = totalSpentCycle;
+        this.dailySpent = dailySpent;
         this.safeDailyLimit = safeDailyLimit;
-        this.remainingBudget = totalAllowance - totalSpent;
         this.categoryTotals = categoryTotals;
         this.statusColorKey = statusColorKey;
     }
 
     public double getTotalAllowance() { return totalAllowance; }
-    public double getTotalSpent() { return totalSpent; }
+    public double getDailySpent() { return dailySpent; }
     public double getSafeDailyLimit() { return safeDailyLimit; }
-    public double getRemainingBudget() { return remainingBudget; }
-    public Map<String, Double> getCategoryTotals() { return categoryTotals; }
-    public String getStatusColorKey() { return statusColorKey; }
+    
+    // FIXED: Remaining budget is Allowance minus TOTAL spent in the cycle
+    public double getRemainingBudget() { return totalAllowance - totalSpentCycle; }
 
-    // NEW: Model decides the message and color
     public String getStatusMessage() {
         return switch (statusColorKey.toLowerCase()) {
             case "red" -> "⚠️ Critical: Budget Exceeded!";
@@ -48,6 +47,6 @@ public class DashboardModel {
 
     public double getSpendingPercentage() {
         if (totalAllowance <= 0) return 0;
-        return (totalSpent / totalAllowance) * 100;
+        return (totalSpentCycle / totalAllowance) * 100;
     }
 }

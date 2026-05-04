@@ -48,29 +48,49 @@ public class CycleSetupActivity extends JPanel {
         gbc.gridy = 5; add(saveBtn, gbc);
     }
 
-    private void saveCycle() {
-        try {
-            double allowance = Double.parseDouble(allowanceField.getText());
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date start = sdf.parse(startDateField.getText());
-            Date end = sdf.parse(endDateField.getText());
 
-            // المنيجر الآن يمتلك الـ PIN الصحيح بسبب التعديل في PinSetupActivity
-            boolean success = budgetManager.startCycle(allowance, start, end);
+private void saveCycle() {
+    try {
+        double allowance = Double.parseDouble(allowanceField.getText());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date start = sdf.parse(startDateField.getText());
+        Date end = sdf.parse(endDateField.getText());
 
-            if (success) {
+        String result = budgetManager.startCycle(allowance, start, end);
+
+        switch (result) {
+            case "success":
                 feedbackLabel.setForeground(Color.GREEN);
-                feedbackLabel.setText("✅ Saved! Redirecting...");
+                feedbackLabel.setText("Cycle started successfully! Redirecting...");
                 new Timer(1000, e -> goDashboard()).start();
-            } else {
+                break;
+
+            case "invalid_allowance":
                 feedbackLabel.setForeground(Color.RED);
-                feedbackLabel.setText("❌ Error: Check dates or PIN.");
-            }
-        } catch (Exception ex) {
-            feedbackLabel.setForeground(Color.RED);
-            feedbackLabel.setText("⚠️ Invalid input format.");
+                feedbackLabel.setText("error: allowance must be a positive number");
+                allowanceField.requestFocus();
+                break;
+
+            case "invalid_dates":
+                feedbackLabel.setForeground(Color.RED);
+                feedbackLabel.setText("error: invalid dates (end should not be before start)");
+                endDateField.requestFocus();
+                break;
+
+            case "no_user":
+                feedbackLabel.setText("error: no user logged in");
+                break;
+
+            default:
+                feedbackLabel.setText("Unexpected error: " + result);
+                break;
         }
+    } catch (NumberFormatException ex) {
+        feedbackLabel.setText("please enter a valid number for allowance");
+    } catch (Exception ex) {
+        feedbackLabel.setText("error: confirm date format is yyyy-MM-dd");
     }
+}
 
     private void goDashboard() {
         mainFrame.getContentPane().removeAll();

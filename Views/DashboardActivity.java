@@ -20,7 +20,6 @@ public class DashboardActivity extends JPanel {
         this.budgetManager = manager;
         this.reportController = new ReportController(budgetManager);
 
-        // FIXED: Set alert callback here (View handles UI)
         budgetManager.getAlertManager().setCallback((title, message) -> {
             JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
         });
@@ -104,16 +103,12 @@ public class DashboardActivity extends JPanel {
 
     public void refreshUI() {
         DashboardModel uiModel = budgetManager.getDashboardData();
+    if (uiModel == null) return;
 
-        if (uiModel == null) {
-            tvStatus.setText("No active cycle found.");
-            return;
-        }
-
-        tvAllowance.setText(String.format("Total Allowance: %.2f EGP", uiModel.getTotalAllowance()));
-        tvRemaining.setText(String.format("Remaining: %.2f EGP", uiModel.getRemainingBudget()));
-        tvDailyLimit.setText(String.format("Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
-        tvDailySpent.setText(String.format("Spent Today: %.2f EGP", uiModel.getTotalSpent()));
+    tvAllowance.setText(String.format("Total Allowance: %.2f EGP", uiModel.getTotalAllowance()));
+    tvRemaining.setText(String.format("Remaining: %.2f EGP", uiModel.getRemainingBudget()));
+    tvDailyLimit.setText(String.format("Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
+    tvDailySpent.setText(String.format("Daily Spent: %.2f EGP", uiModel.getDailySpent()));
         
         double todayRemaining = budgetManager.getTodayRemainingDailyLimit();
         tvTodayRemaining.setText(String.format("Today Remaining: %.2f EGP", todayRemaining));
@@ -129,7 +124,6 @@ public class DashboardActivity extends JPanel {
         int progress = Math.min(100, (int) uiModel.getSpendingPercentage());
         pbBudgetProgress.setValue(progress);
 
-        // FIXED: Get message and color from Model, not calculate here
         tvStatus.setText(uiModel.getStatusMessage());
         tvStatus.setForeground(uiModel.getStatusColor());
 
@@ -140,7 +134,6 @@ public class DashboardActivity extends JPanel {
         }
     }
 
-    // REMOVED: updateStatusColor() - moved to DashboardModel
 
     private void applyWhiteForeground(JLabel... labels) {
         for (JLabel l : labels) l.setForeground(Color.WHITE);
