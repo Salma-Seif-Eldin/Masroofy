@@ -64,12 +64,11 @@ public class DashboardActivity extends JPanel {
             ExpensesEntryActivity entry = new ExpensesEntryActivity(budgetManager);
             entry.setVisible(true);
             entry.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent ev) {
-                    budgetManager.loadExistingBudget();
-                    refreshUI();
-                }
-            });
+    @Override
+    public void windowClosed(java.awt.event.WindowEvent ev) {
+        refreshUI();
+    }
+});
         });
 
         btnHistory.addActionListener(e -> new HistoryActivity(budgetManager, this).setVisible(true));

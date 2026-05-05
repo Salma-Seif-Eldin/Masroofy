@@ -154,16 +154,21 @@ public String getExpenseRejectionReason(double amount) {
     if (currentCycle == null) return "no_cycle";
     
     double totalRemaining = currentCycle.getTotalAllowance() - getTotalSpent();
-
     if (amount > totalRemaining) {
         return "total_budget_exhausted";
     }
 
-    return null; 
+    // ADD THIS: block if today's spending would exceed the daily limit
+    double dailyLimit = getFixedDailyLimit();
+    double todaySpent = getDailySpent();
+    if (dailyLimit > 0 && (todaySpent + amount) > dailyLimit) {
+        return "daily_limit_exceeded";
+    }
+
+    return null;
 }
 
-    @Deprecated
-    public double getDailyLimit() { return getFixedDailyLimit(); }
+  
 
     public double getDailySpent() {
         double todayTotal = 0;
@@ -224,10 +229,8 @@ public void refreshBudgetState() {
 }
 
 // Update your add method (or wherever expenses are added)
-public void addExpenseLocal(Expense e) {
-    this.expenses.add(e);
-    refreshBudgetState(); // <--- CRITICAL
-}
+
+
 public void addExpense(Expense exp) {
     this.expenses.add(exp);
     

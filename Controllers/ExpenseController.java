@@ -28,11 +28,12 @@ public ExpenseResult processExpense(double amount, int category_id, String note)
 
     String rejectionReason = budgetController.getExpenseRejectionReason(amount);
     
-    if ("total_budget_exhausted".equals(rejectionReason)) {
-        return new ExpenseResult(false, 
-            "Error: Cannot add expense. The requested amount is greater than your remaining total budget!", 
-            "total_exceeded");
-    }
+    if ("daily_limit_exceeded".equals(rejectionReason)) {
+    return new ExpenseResult(false,
+        "Cannot add expense. This would exceed your daily limit of " +
+        String.format("%.2f", budgetController.getFixedDailyLimit()) + " EGP.",
+        "daily_limit_exceeded");
+}
 
     Expense exp = new Expense(amount, category_id, note);
     exp.setCycleId(budgetController.getCurrentCycle().getCycleId());
@@ -52,25 +53,20 @@ public ExpenseResult processExpense(double amount, int category_id, String note)
     }
 
     public boolean modifyTransaction(int id, String action, Expense updatedData) {
-        if (action.equals("Edit") && updatedData != null) {
-            boolean success = transactionDAO.updateExpense(id, updatedData.getAmount(), 
-                                                           updatedData.getCategoryId(), 
-                                                           updatedData.getNotes());
-            
-            if (success) {
-                budgetController.loadExistingBudget(); 
-                return true;
-            }
-        } else if (action.equals("Delete")) {
-            boolean success = transactionDAO.deleteExpense(id);
-            if (success) {
-                budgetController.loadExistingBudget();
-                return true;
-            }
-        }
-        return false;
+    boolean success = false;
+
+    if ("Edit".equals(action) && updatedData != null) {
+        success = transactionDAO.updateExpense(id, updatedData.getAmount(),
+                      updatedData.getCategoryId(), updatedData.getNotes());
+    } else if ("Delete".equals(action)) {
+        success = transactionDAO.deleteExpense(id);
     }
 
+    if (success) {
+        budgetController.loadExistingBudget(); // stays here, not in View
+    }
+    return success;
+}
     public List<Expense> filterHistory(int categoryID, String startDate, String endDate) {
         return transactionDAO.getFilteredExpenses(categoryID, startDate, endDate);
     }
