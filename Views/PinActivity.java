@@ -19,6 +19,13 @@ public class PinActivity extends JPanel {
     private BudgetManager manager;
     private Runnable onSuccess;
 
+    /**
+     * Constructs the legacy PIN login panel.
+     *
+     * @param manager    the {@link BudgetManager} used to load user budget data
+     * @param correctPin the stored PIN to validate against
+     * @param onSuccess  the callback to run when login succeeds
+     */
     public PinActivity(BudgetManager manager, String correctPin, Runnable onSuccess) {
         this.manager = manager;
         this.correctPin = correctPin;
@@ -34,13 +41,15 @@ public class PinActivity extends JPanel {
         JLabel label = new JLabel("Enter PIN to Access Masroofy");
         label.setFont(new Font("Arial", Font.BOLD, 20));
         label.setForeground(new Color(212, 175, 55));
-        gbc.gridy = 0; add(label, gbc);
+        gbc.gridy = 0;
+        add(label, gbc);
 
         pinField = new JPasswordField(10);
         pinField.setFont(new Font("Arial", Font.BOLD, 22));
         pinField.setHorizontalAlignment(JTextField.CENTER);
         pinField.setBackground(new Color(230, 230, 230));
-        gbc.gridy = 1; add(pinField, gbc);
+        gbc.gridy = 1;
+        add(pinField, gbc);
 
         loginBtn = new JButton("Unlock Account");
         loginBtn.setBackground(new Color(212, 175, 55));
@@ -48,12 +57,17 @@ public class PinActivity extends JPanel {
         loginBtn.setFont(new Font("Arial", Font.BOLD, 16));
         loginBtn.setFocusPainted(false);
         loginBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        gbc.gridy = 2; add(loginBtn, gbc);
+        gbc.gridy = 2;
+        add(loginBtn, gbc);
 
         loginBtn.addActionListener(e -> handleLogin());
         pinField.addActionListener(e -> handleLogin());
     }
 
+    /**
+     * Validates the entered PIN and navigates the user to the next screen
+     * when authentication succeeds.
+     */
     private void handleLogin() {
         String enteredPin = new String(pinField.getPassword());
 
@@ -63,8 +77,8 @@ public class PinActivity extends JPanel {
             onSuccess.run();
         } else {
             JOptionPane.showMessageDialog(this,
-                "Incorrect PIN! Please try again.",
-                "Access Denied", JOptionPane.ERROR_MESSAGE);
+                    "Incorrect PIN! Please try again.",
+                    "Access Denied", JOptionPane.ERROR_MESSAGE);
             pinField.setText("");
             pinField.requestFocus();
         }

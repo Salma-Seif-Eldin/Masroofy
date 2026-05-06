@@ -7,6 +7,18 @@ import java.awt.*;
 import java.util.Map;
 import javax.swing.*;
 
+/**
+ * The main dashboard screen of the Masroofy application.
+ * <p>
+ * Displays budget summary information including the total allowance, remaining
+ * balance, daily spending, a progress bar, and a pie chart of spending by category.
+ * Provides navigation to the expense entry and history screens, and supports
+ * generating a budget summary report.
+ * </p>
+ *
+ * @author Masroofy Team
+ * @version 1.0
+ */
 public class DashboardActivity extends JPanel {
 
     private JLabel tvAllowance, tvRemaining, tvDailyLimit, tvDailySpent, tvStatus;
@@ -16,6 +28,14 @@ public class DashboardActivity extends JPanel {
     private ReportController reportController;
     private SpendingChart spendingChart;
 
+    /**
+     * Constructs the DashboardActivity and initializes all UI components.
+     * <p>
+     * Sets up the alert callback so budget warnings are shown as dialog messages.
+     * </p>
+     *
+     * @param manager the {@link BudgetManager} providing budget data and operations
+     */
     public DashboardActivity(BudgetManager manager) {
         this.budgetManager = manager;
         this.reportController = new ReportController(budgetManager);
@@ -32,15 +52,19 @@ public class DashboardActivity extends JPanel {
         refreshUI();
     }
 
+    /**
+     * Initializes and adds all UI components to the panel including labels,
+     * progress bar, spending chart, and action buttons.
+     */
     private void initViews() {
-        tvStatus    = new JLabel("Checking budget status...");
-        tvAllowance = new JLabel("Total Allowance: 0.00");
-        tvRemaining = new JLabel("Remaining: 0.00");
-        tvDailyLimit = new JLabel("Daily Limit: 0.00");
+        tvStatus         = new JLabel("Checking budget status...");
+        tvAllowance      = new JLabel("Total Allowance: 0.00");
+        tvRemaining      = new JLabel("Remaining: 0.00");
+        tvDailyLimit     = new JLabel("Daily Limit: 0.00");
         tvTodayRemaining = new JLabel("Today Remaining: 0.00");
-        tvDailySpent = new JLabel("Spent Today: 0.00");
+        tvDailySpent     = new JLabel("Spent Today: 0.00");
 
-        applyWhiteForeground(tvStatus, tvAllowance, tvRemaining, tvDailyLimit, 
+        applyWhiteForeground(tvStatus, tvAllowance, tvRemaining, tvDailyLimit,
                              tvTodayRemaining, tvDailySpent);
 
         pbBudgetProgress = new JProgressBar(0, 100);
@@ -64,11 +88,11 @@ public class DashboardActivity extends JPanel {
             ExpensesEntryActivity entry = new ExpensesEntryActivity(budgetManager);
             entry.setVisible(true);
             entry.addWindowListener(new java.awt.event.WindowAdapter() {
-    @Override
-    public void windowClosed(java.awt.event.WindowEvent ev) {
-        refreshUI();
-    }
-});
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent ev) {
+                    refreshUI();
+                }
+            });
         });
 
         btnHistory.addActionListener(e -> new HistoryActivity(budgetManager, this).setVisible(true));
@@ -100,18 +124,25 @@ public class DashboardActivity extends JPanel {
         add(btnReport);
     }
 
+    /**
+     * Refreshes all UI labels, progress bar, and chart with the latest budget data.
+     * <p>
+     * Applies color coding to the today-remaining label based on how close the user
+     * is to their daily limit.
+     * </p>
+     */
     public void refreshUI() {
         DashboardModel uiModel = budgetManager.getDashboardData();
-    if (uiModel == null) return;
+        if (uiModel == null) return;
 
-    tvAllowance.setText(String.format("Total Allowance: %.2f EGP", uiModel.getTotalAllowance()));
-    tvRemaining.setText(String.format("Remaining: %.2f EGP", uiModel.getRemainingBudget()));
-    tvDailyLimit.setText(String.format("Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
-    tvDailySpent.setText(String.format("Daily Spent: %.2f EGP", uiModel.getDailySpent()));
-        
+        tvAllowance.setText(String.format("Total Allowance: %.2f EGP", uiModel.getTotalAllowance()));
+        tvRemaining.setText(String.format("Remaining: %.2f EGP", uiModel.getRemainingBudget()));
+        tvDailyLimit.setText(String.format("Daily Limit: %.2f EGP", uiModel.getSafeDailyLimit()));
+        tvDailySpent.setText(String.format("Daily Spent: %.2f EGP", uiModel.getDailySpent()));
+
         double todayRemaining = budgetManager.getTodayRemainingDailyLimit();
         tvTodayRemaining.setText(String.format("Today Remaining: %.2f EGP", todayRemaining));
-        
+
         if (todayRemaining <= 0) {
             tvTodayRemaining.setForeground(Color.RED);
         } else if (todayRemaining < budgetManager.getFixedDailyLimit() * 0.2) {
@@ -133,11 +164,20 @@ public class DashboardActivity extends JPanel {
         }
     }
 
-
+    /**
+     * Applies white foreground color to all provided labels.
+     *
+     * @param labels the labels to style
+     */
     private void applyWhiteForeground(JLabel... labels) {
         for (JLabel l : labels) l.setForeground(Color.WHITE);
     }
 
+    /**
+     * Applies a consistent gold-on-black style to the given button.
+     *
+     * @param btn the button to style
+     */
     private void styleButton(JButton btn) {
         btn.setBackground(new Color(212, 175, 55));
         btn.setForeground(Color.BLACK);

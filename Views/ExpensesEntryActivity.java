@@ -5,6 +5,17 @@ import Controllers.BudgetManager;
 import Controllers.ExpenseController;
 import Controllers.ExpenseController.ExpenseResult;
 
+/**
+ * A dialog window that allows the user to enter and submit a new expense.
+ * <p>
+ * Displays fields for amount, category, and notes. On submission, delegates
+ * validation and persistence to {@link ExpenseController}. Shows success or
+ * error messages based on the result and closes automatically on success.
+ * </p>
+ *
+ * @author Masroofy Team
+ * @version 1.0
+ */
 public class ExpensesEntryActivity extends JFrame {
 
     private BudgetManager budgetManager;
@@ -14,6 +25,11 @@ public class ExpensesEntryActivity extends JFrame {
     private JComboBox<String> jComboBox1;
     private JTextField jTextField1, jTextField2;
 
+    /**
+     * Constructs the ExpensesEntryActivity window and initializes all UI components.
+     *
+     * @param manager the {@link BudgetManager} used to process and store the expense
+     */
     public ExpensesEntryActivity(BudgetManager manager) {
         this.budgetManager = manager;
         initComponents();
@@ -21,11 +37,15 @@ public class ExpensesEntryActivity extends JFrame {
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
+    /**
+     * Initializes and lays out all UI components including labels, text fields,
+     * category dropdown, and the save button.
+     */
     private void initComponents() {
-        jLabel1   = new JLabel("Amount");
-        jLabel2   = new JLabel("Category");
-        jLabel3   = new JLabel("Notes");
-        jButton1  = new JButton("Save Expense");
+        jLabel1    = new JLabel("Amount");
+        jLabel2    = new JLabel("Category");
+        jLabel3    = new JLabel("Notes");
+        jButton1   = new JButton("Save Expense");
         jComboBox1 = new JComboBox<>();
         jTextField1 = new JTextField(15);
         jTextField2 = new JTextField(15);
@@ -79,6 +99,14 @@ public class ExpensesEntryActivity extends JFrame {
         pack();
     }
 
+    /**
+     * Handles the Save Expense button action.
+     * <p>
+     * Validates user input, delegates expense processing to {@link ExpenseController},
+     * and displays a success or error dialog based on the result.
+     * Closes the window on success.
+     * </p>
+     */
     private void jButton1ActionPerformed() {
         try {
             String amountText = jTextField1.getText().trim();
@@ -101,27 +129,24 @@ public class ExpensesEntryActivity extends JFrame {
             }
 
             int categoryId = getCategoryId(selectedCategory);
-
             ExpenseController controller = ExpenseController.createFor(budgetManager);
-
             ExpenseResult result = controller.processExpense(amount, categoryId, note);
 
             if (result.isSuccess()) {
-                JOptionPane.showMessageDialog(this, "✅ " + result.getMessage(), 
+                JOptionPane.showMessageDialog(this, "✅ " + result.getMessage(),
                     "Success", JOptionPane.INFORMATION_MESSAGE);
-                
+
                 if (result.hasWarning()) {
-                    JOptionPane.showMessageDialog(this, result.getWarning(), 
+                    JOptionPane.showMessageDialog(this, result.getWarning(),
                         "Budget Warning", JOptionPane.WARNING_MESSAGE);
                 }
-                
-                this.dispose();
-                
-            } else {
 
+                this.dispose();
+
+            } else {
                 int messageType = JOptionPane.ERROR_MESSAGE;
                 String title = "Error";
-                
+
                 if ("daily_limit_exceeded".equals(result.getRejectionType())) {
                     messageType = JOptionPane.WARNING_MESSAGE;
                     title = "Daily Limit Exceeded";
@@ -129,11 +154,10 @@ public class ExpensesEntryActivity extends JFrame {
                     messageType = JOptionPane.ERROR_MESSAGE;
                     title = "Budget Exceeded";
                 }
-                
-                JOptionPane.showMessageDialog(this, 
-                    "❌ " + result.getMessage(), 
-                    title, messageType);
-                
+
+                JOptionPane.showMessageDialog(this,
+                    "❌ " + result.getMessage(), title, messageType);
+
                 jTextField1.setText("");
                 jTextField1.requestFocus();
             }
@@ -144,6 +168,9 @@ public class ExpensesEntryActivity extends JFrame {
         }
     }
 
+    /**
+     * Populates the category dropdown with all predefined category names.
+     */
     private void populateCategories() {
         jComboBox1.removeAllItems();
         for (String name : Models.Category.getAllNames()) {
@@ -151,7 +178,13 @@ public class ExpensesEntryActivity extends JFrame {
         }
     }
 
-     private int getCategoryId(String name) {
+    /**
+     * Converts a category name string to its corresponding numeric ID.
+     *
+     * @param name the category name to look up
+     * @return the category ID corresponding to the given name
+     */
+    private int getCategoryId(String name) {
         return Models.Category.getIdByName(name);
     }
 }

@@ -6,12 +6,28 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.swing.*;
 
+/**
+ * Screen for initializing a new budget cycle.
+ * <p>
+ * Allows the user to enter a total allowance and start/end dates for the cycle.
+ * Validates inputs and delegates cycle creation to {@link BudgetManager}.
+ * </p>
+ *
+ * @author Masroofy Team
+ * @version 1.0
+ */
 public class CycleSetupActivity extends JPanel {
     private BudgetManager budgetManager;
     private JFrame mainFrame;
     private JTextField allowanceField, startDateField, endDateField;
     private JLabel feedbackLabel;
 
+    /**
+     * Constructs the cycle setup screen.
+     *
+     * @param budgetManager the {@link BudgetManager} handling cycle persistence
+     * @param mainFrame     the parent frame used for navigation
+     */
     public CycleSetupActivity(BudgetManager budgetManager, JFrame mainFrame) {
         this.budgetManager = budgetManager;
         this.mainFrame = mainFrame;
@@ -20,6 +36,9 @@ public class CycleSetupActivity extends JPanel {
         buildUI();
     }
 
+    /**
+     * Builds and lays out the UI components for the cycle setup screen.
+     */
     private void buildUI() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
@@ -28,77 +47,110 @@ public class CycleSetupActivity extends JPanel {
         JLabel title = new JLabel("Start New Budget Cycle");
         title.setFont(new Font("Arial", Font.BOLD, 20));
         title.setForeground(new Color(212, 175, 55));
-        gbc.gridwidth = 2; gbc.gridy = 0; add(title, gbc);
+        gbc.gridwidth = 2;
+        gbc.gridy = 0;
+        add(title, gbc);
 
-        gbc.gridwidth = 1; gbc.gridy = 1; add(createLabel("Allowance:"), gbc);
-        allowanceField = new JTextField(15); gbc.gridx = 1; add(allowanceField, gbc);
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        add(createLabel("Allowance:"), gbc);
+        allowanceField = new JTextField(15);
+        gbc.gridx = 1;
+        add(allowanceField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; add(createLabel("Start (yyyy-MM-dd):"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        add(createLabel("Start (yyyy-MM-dd):"), gbc);
         startDateField = new JTextField(new SimpleDateFormat("yyyy-MM-dd").format(new Date()), 15);
-        gbc.gridx = 1; add(startDateField, gbc);
+        gbc.gridx = 1;
+        add(startDateField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; add(createLabel("End (yyyy-MM-dd):"), gbc);
-        endDateField = new JTextField(15); gbc.gridx = 1; add(endDateField, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        add(createLabel("End (yyyy-MM-dd):"), gbc);
+        endDateField = new JTextField(15);
+        gbc.gridx = 1;
+        add(endDateField, gbc);
 
         feedbackLabel = new JLabel(" ");
-        gbc.gridwidth = 2; gbc.gridx = 0; gbc.gridy = 4; add(feedbackLabel, gbc);
+        gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        add(feedbackLabel, gbc);
 
         JButton saveBtn = new JButton("✅ Save Cycle");
         saveBtn.addActionListener(e -> saveCycle());
-        gbc.gridy = 5; add(saveBtn, gbc);
+        gbc.gridy = 5;
+        add(saveBtn, gbc);
     }
 
+    /**
+     * Reads user input, validates the cycle fields, and attempts to start a new
+     * budget cycle.
+     * Updates the UI with success or error feedback.
+     */
+    private void saveCycle() {
+        try {
+            double allowance = Double.parseDouble(allowanceField.getText());
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date start = sdf.parse(startDateField.getText());
+            Date end = sdf.parse(endDateField.getText());
 
-private void saveCycle() {
-    try {
-        double allowance = Double.parseDouble(allowanceField.getText());
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        Date start = sdf.parse(startDateField.getText());
-        Date end = sdf.parse(endDateField.getText());
+            String result = budgetManager.startCycle(allowance, start, end);
 
-        String result = budgetManager.startCycle(allowance, start, end);
+            switch (result) {
+                case "success":
+                    feedbackLabel.setForeground(Color.GREEN);
+                    feedbackLabel.setText("Cycle started successfully! Redirecting...");
+                    new Timer(1000, e -> goDashboard()).start();
+                    break;
 
-        switch (result) {
-            case "success":
-                feedbackLabel.setForeground(Color.GREEN);
-                feedbackLabel.setText("Cycle started successfully! Redirecting...");
-                new Timer(1000, e -> goDashboard()).start();
-                break;
+                case "invalid_allowance":
+                    feedbackLabel.setForeground(Color.RED);
+                    feedbackLabel.setText("error: allowance must be a positive number");
+                    allowanceField.requestFocus();
+                    break;
 
-            case "invalid_allowance":
-                feedbackLabel.setForeground(Color.RED);
-                feedbackLabel.setText("error: allowance must be a positive number");
-                allowanceField.requestFocus();
-                break;
+                case "invalid_dates":
+                    feedbackLabel.setForeground(Color.RED);
+                    feedbackLabel.setText("error: invalid dates (end should not be before start)");
+                    endDateField.requestFocus();
+                    break;
 
-            case "invalid_dates":
-                feedbackLabel.setForeground(Color.RED);
-                feedbackLabel.setText("error: invalid dates (end should not be before start)");
-                endDateField.requestFocus();
-                break;
+                case "no_user":
+                    feedbackLabel.setText("error: no user logged in");
+                    break;
 
-            case "no_user":
-                feedbackLabel.setText("error: no user logged in");
-                break;
-
-            default:
-                feedbackLabel.setText("Unexpected error: " + result);
-                break;
+                default:
+                    feedbackLabel.setText("Unexpected error: " + result);
+                    break;
+            }
+        } catch (NumberFormatException ex) {
+            feedbackLabel.setText("please enter a valid number for allowance");
+        } catch (Exception ex) {
+            feedbackLabel.setText("error: confirm date format is yyyy-MM-dd");
         }
-    } catch (NumberFormatException ex) {
-        feedbackLabel.setText("please enter a valid number for allowance");
-    } catch (Exception ex) {
-        feedbackLabel.setText("error: confirm date format is yyyy-MM-dd");
     }
-}
 
+    /**
+     * Navigates to the dashboard screen after a successful cycle creation.
+     */
     private void goDashboard() {
         mainFrame.getContentPane().removeAll();
         mainFrame.getContentPane().add(new DashboardActivity(budgetManager));
-        mainFrame.revalidate(); mainFrame.repaint();
+        mainFrame.revalidate();
+        mainFrame.repaint();
     }
 
+    /**
+     * Creates a white-styled label used by the cycle setup form.
+     *
+     * @param text the label text
+     * @return a configured {@link JLabel}
+     */
     private JLabel createLabel(String text) {
-        JLabel l = new JLabel(text); l.setForeground(Color.WHITE); return l;
+        JLabel l = new JLabel(text);
+        l.setForeground(Color.WHITE);
+        return l;
     }
 }

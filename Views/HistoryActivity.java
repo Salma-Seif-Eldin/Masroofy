@@ -8,6 +8,16 @@ import Models.Expense;
 import Controllers.BudgetManager;
 import Controllers.ExpenseController;
 
+/**
+ * A window that displays historical expense transactions.
+ * <p>
+ * Provides filtering by category and date range, and supports editing or
+ * deleting existing expense entries.
+ * </p>
+ *
+ * @author Masroofy Team
+ * @version 1.0
+ */
 public class HistoryActivity extends JFrame {
     private JTable expenseTable;
     private DefaultTableModel tableModel;
@@ -18,34 +28,46 @@ public class HistoryActivity extends JFrame {
     private JTextField endDateField;
     private DashboardActivity dashboard;
 
+    /**
+     * Constructs a history window for the current user's expenses.
+     *
+     * @param manager   the {@link BudgetManager} providing expense data
+     * @param dashboard the dashboard screen to refresh after edits or deletes
+     */
     public HistoryActivity(BudgetManager manager, DashboardActivity dashboard) {
         this.budgetManager = manager;
         this.dashboard = dashboard;
         this.expenseController = ExpenseController.createFor(budgetManager);
-        
+
         setTitle("Expense History - User: " + budgetManager.getCurrentPin());
         setSize(800, 550);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        String[] columnNames = {"ID", "Amount (EGP)", "Category", "Notes", "Date"};
+        String[] columnNames = { "ID", "Amount (EGP)", "Category", "Notes", "Date" };
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
-        
+
         expenseTable = new JTable(tableModel);
         setupUI();
         loadExpenses();
     }
 
+    /**
+     * Builds the history window UI and attaches action listeners.
+     */
     private void setupUI() {
         setLayout(new BorderLayout());
 
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filterPanel.setBorder(BorderFactory.createTitledBorder("Filter Transactions"));
 
-        categoryFilter = new JComboBox<>(new String[]{"All", "Food", "Transport", "Shopping", "Health", "Education", "Entertainment", "Other"});
+        categoryFilter = new JComboBox<>(new String[] { "All", "Food", "Transport", "Shopping", "Health", "Education",
+                "Entertainment", "Other" });
         startDateField = new JTextField(10);
         endDateField = new JTextField(10);
         JButton btnApplyFilter = new JButton("Apply Filter");
@@ -90,10 +112,10 @@ public class HistoryActivity extends JFrame {
                 }
             }
         });
-        
+
         btnEdit.addActionListener(e -> {
             int selectedRow = expenseTable.getSelectedRow();
-            
+
             if (selectedRow != -1) {
                 int id = (int) tableModel.getValueAt(selectedRow, 0);
                 double currentAmount = Double.parseDouble(tableModel.getValueAt(selectedRow, 1).toString());
@@ -102,18 +124,20 @@ public class HistoryActivity extends JFrame {
 
                 JTextField amountField = new JTextField(String.valueOf(currentAmount));
                 JTextField notesField = new JTextField(currentNotes);
-                String[] categories = {"Food", "Transport", "Shopping", "Health", "Education", "Entertainment", "Other"};
+                String[] categories = { "Food", "Transport", "Shopping", "Health", "Education", "Entertainment",
+                        "Other" };
                 JComboBox<String> catBox = new JComboBox<>(categories);
                 catBox.setSelectedItem(currentCategory);
 
                 Object[] message = {
-                    "New Amount (EGP):", amountField,
-                    "Category:", catBox,
-                    "Notes:", notesField
+                        "New Amount (EGP):", amountField,
+                        "Category:", catBox,
+                        "Notes:", notesField
                 };
 
-                int option = JOptionPane.showConfirmDialog(this, message, "Edit Transaction", JOptionPane.OK_CANCEL_OPTION);
-                
+                int option = JOptionPane.showConfirmDialog(this, message, "Edit Transaction",
+                        JOptionPane.OK_CANCEL_OPTION);
+
                 if (option == JOptionPane.OK_OPTION) {
                     try {
                         double newAmount = Double.parseDouble(amountField.getText());
@@ -123,13 +147,14 @@ public class HistoryActivity extends JFrame {
                         Expense updatedData = new Expense(newAmount, newCatId, newNotes);
 
                         if (expenseController.modifyTransaction(id, "Edit", updatedData)) {
-                            loadExpenses(); 
+                            loadExpenses();
                             if (dashboard != null) {
-                                dashboard.refreshUI(); 
+                                dashboard.refreshUI();
                             }
                             JOptionPane.showMessageDialog(this, "Transaction updated and Dashboard refreshed!");
                         } else {
-                            JOptionPane.showMessageDialog(this, "Failed to update transaction.", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(this, "Failed to update transaction.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
                         }
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(this, "Please enter a valid numeric amount.");
@@ -148,6 +173,9 @@ public class HistoryActivity extends JFrame {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    /**
+     * Applies the selected category and date range filters to the expense list.
+     */
     private void applyFilterLogic() {
         int catID = categoryFilter.getSelectedIndex();
         String start = startDateField.getText();
@@ -163,25 +191,40 @@ public class HistoryActivity extends JFrame {
         }
     }
 
+    /**
+     * Refreshes the table with the current expense list from the budget manager.
+     */
     private void loadExpenses() {
         updateTableData(budgetManager.getExpenses());
     }
 
+    /**
+     * Updates the table rows to display the provided expenses.
+     *
+     * @param expenses the list of expenses to display
+     */
     private void updateTableData(List<Expense> expenses) {
         tableModel.setRowCount(0);
-        if (expenses == null) return;
+        if (expenses == null)
+            return;
 
         for (Expense exp : expenses) {
-            tableModel.addRow(new Object[]{
-                exp.getExpenseId(),
-                String.format("%.2f", exp.getAmount()),
-                getCategoryName(exp.getCategoryId()),
-                exp.getNotes(),
-                exp.getTimestamp().toString()
+            tableModel.addRow(new Object[] {
+                    exp.getExpenseId(),
+                    String.format("%.2f", exp.getAmount()),
+                    getCategoryName(exp.getCategoryId()),
+                    exp.getNotes(),
+                    exp.getTimestamp().toString()
             });
         }
     }
 
+    /**
+     * Resolves the display name for the given category ID.
+     *
+     * @param id the numeric category ID
+     * @return the category name string
+     */
     private String getCategoryName(int id) {
         return Models.Category.getNameById(id);
     }
