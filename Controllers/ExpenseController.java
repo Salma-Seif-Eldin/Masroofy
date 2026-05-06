@@ -13,67 +13,61 @@ public class ExpenseController {
         this.budgetController = budgetController;
     }
 
-    // ======================================================================
-    // NEW: Factory method so Views don't create TransactionDAO directly
-    // ======================================================================
     public static ExpenseController createFor(BudgetManager budgetManager) {
         return new ExpenseController(new TransactionDAO(), budgetManager);
     }
 
+    public ExpenseResult processExpense(double amount, int category_id, String note) {
+        if (amount <= 0) {
+            return new ExpenseResult(false, "Please enter a valid amount greater than zero.", "invalid_amount");
+        }
 
-public ExpenseResult processExpense(double amount, int category_id, String note) {
-    if (amount <= 0) {
-        return new ExpenseResult(false, "Please enter a valid amount greater than zero.", "invalid_amount");
+        String rejectionReason = budgetController.getExpenseRejectionReason(amount);
+        
+        if ("daily_limit_exceeded".equals(rejectionReason)) {
+            return new ExpenseResult(false,
+                "Cannot add expense. This would exceed your daily limit of " +
+                String.format("%.2f", budgetController.getFixedDailyLimit()) + " EGP.",
+                "daily_limit_exceeded");
+        }
+
+        Expense exp = new Expense(amount, category_id, note);
+        exp.setCycleId(budgetController.getCurrentCycle().getCycleId());
+        exp.setUserPin(budgetController.getCurrentPin());
+
+        boolean saved = transactionDAO.saveExpense(exp);
+        if (saved) {
+            budgetController.addExpense(exp);
+            return new ExpenseResult(true, "Transaction saved successfully", null);
+        } else {
+            return new ExpenseResult(false, "Failed to save transaction in database", "db_error");
+        }
     }
-
-    String rejectionReason = budgetController.getExpenseRejectionReason(amount);
-    
-    if ("daily_limit_exceeded".equals(rejectionReason)) {
-    return new ExpenseResult(false,
-        "Cannot add expense. This would exceed your daily limit of " +
-        String.format("%.2f", budgetController.getFixedDailyLimit()) + " EGP.",
-        "daily_limit_exceeded");
-}
-
-    Expense exp = new Expense(amount, category_id, note);
-    exp.setCycleId(budgetController.getCurrentCycle().getCycleId());
-    exp.setUserPin(budgetController.getCurrentPin());
-
-    boolean saved = transactionDAO.saveExpense(exp);
-    if (saved) {
-        budgetController.addExpense(exp); 
-        return new ExpenseResult(true, "Transaction saved successfully", null);
-    } else {
-        return new ExpenseResult(false, "Failed to save transaction in database", "db_error");
-    }
-}
 
     public List<Expense> loadHistory() {
         return budgetController.getExpenses();
     }
 
     public boolean modifyTransaction(int id, String action, Expense updatedData) {
-    boolean success = false;
+        boolean success = false;
 
-    if ("Edit".equals(action) && updatedData != null) {
-        success = transactionDAO.updateExpense(id, updatedData.getAmount(),
-                      updatedData.getCategoryId(), updatedData.getNotes());
-    } else if ("Delete".equals(action)) {
-        success = transactionDAO.deleteExpense(id);
+        if ("Edit".equals(action) && updatedData != null) {
+            success = transactionDAO.updateExpense(id, updatedData.getAmount(),
+                          updatedData.getCategoryId(), updatedData.getNotes());
+        } else if ("Delete".equals(action)) {
+            success = transactionDAO.deleteExpense(id);
+        }
+
+        if (success) {
+            budgetController.loadExistingBudget();
+        }
+        return success;
     }
 
-    if (success) {
-        budgetController.loadExistingBudget(); // stays here, not in View
-    }
-    return success;
-}
     public List<Expense> filterHistory(int categoryID, String startDate, String endDate) {
         return transactionDAO.getFilteredExpenses(categoryID, startDate, endDate);
     }
 
-    // ======================================================================
-    // Result class
-    // ======================================================================
     public static class ExpenseResult {
         private final boolean success;
         private final String message;

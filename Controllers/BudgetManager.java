@@ -30,10 +30,6 @@ public class BudgetManager {
     public String getCurrentPin() {
         return currentPin;
     }
-    public double getTotalSpent() {
-        if (currentCycle == null) return 0;
-        return currentCycle.getTotalAllowance() - getRemainingBudget();
-    }
 
     public AlertManager getAlertManager() {
         return alertManager;
@@ -55,76 +51,76 @@ public class BudgetManager {
         return userDAO.getFirstPin();
     }
 
-    // Inside BudgetManager.java
-public void loadExistingBudget() {
-    if (currentPin == null) return;
-    currentCycle = cycleDAO.getLastSavedCycle(currentPin);
-    if (currentCycle != null) {
-        expenses = cycleDAO.getExpensesByCycle(currentCycle.getCycleId(), currentPin);
+    public void loadExistingBudget() {
+        if (currentPin == null) return;
+        currentCycle = cycleDAO.getLastSavedCycle(currentPin);
+        if (currentCycle != null) {
+            expenses = cycleDAO.getExpensesByCycle(currentCycle.getCycleId(), currentPin);
+            currentCycle.calculateRemainingBalance(expenses);
+            System.out.println("Loaded " + expenses.size() + " expenses.");
+        }
+    }
+
+    public DashboardModel getDashboardData() {
+        if (currentCycle == null) return null;
+
+        double allowance = currentCycle.getTotalAllowance();
         
-        currentCycle.calculateRemainingBalance(expenses); 
+        double totalSpentCycle = 0;
+        for (Expense e : expenses) {
+            totalSpentCycle += e.getAmount();
+        }
+
+        double dailySpent = getDailySpent();
+        double dailyLimit = getFixedDailyLimit();
+
+        String color = "Green";
+        double pct = (totalSpentCycle / allowance) * 100;
+        if (pct >= 100) color = "Red";
+        else if (pct >= 80) color = "Orange";
+
+        return new DashboardModel(allowance, totalSpentCycle, dailySpent, dailyLimit, getPieChartData(), color);
+    }
+
+    public String startCycle(double allowance, Date start, Date end) {
+        if (currentPin == null) return "no_user";
+
+        if (allowance <= 0) {
+            return "invalid_allowance";
+        }
+
+        if (start == null || end == null || end.before(start)) {
+            return "invalid_dates";
+        }
+
+        BudgetCycle newCycle = new BudgetCycle();
+        newCycle.setUserPin(currentPin);
+        newCycle.setTotalAllowance(allowance);
+        newCycle.setStartDate(start);
+        newCycle.setEndDate(end);
+
+        boolean saved = cycleDAO.saveNewCycle(newCycle, currentPin);
+        if (saved) {
+            this.currentCycle = newCycle;
+            this.expenses.clear();
+            return "success";
+        }
         
-        System.out.println("Loaded " + expenses.size() + " expenses.");
-    }
-}
-
-public DashboardModel getDashboardData() {
-    if (currentCycle == null) return null;
-
-    double allowance = currentCycle.getTotalAllowance();
-    
-    // 1. Calculate Total Spent in the entire cycle
-    double totalSpentCycle = 0;
-    for (Expense e : expenses) {
-        totalSpentCycle += e.getAmount();
+        return "db_error";
     }
 
-    // 2. Calculate Today's Spent only
-    double dailySpent = getDailySpent();
-    
-    double dailyLimit = getFixedDailyLimit();
-
-    String color = "Green";
-    double pct = (totalSpentCycle / allowance) * 100;
-    if (pct >= 100) color = "Red";
-    else if (pct >= 80) color = "Orange";
-
-    return new DashboardModel(allowance, totalSpentCycle, dailySpent, dailyLimit, getPieChartData(), color);
-}
-
-    // Inside BudgetManager.java
-
-
-
-public String startCycle(double allowance, Date start, Date end) {
-    if (currentPin == null) return "no_user";
-
-    if (allowance <= 0) {
-        return "invalid_allowance";
+    public BudgetCycle getCurrentCycle() {
+        return currentCycle;
     }
 
-    if (start == null || end == null || end.before(start)) {
-        return "invalid_dates";
+    public List<Expense> getExpenses() {
+        return expenses;
     }
 
-    BudgetCycle newCycle = new BudgetCycle();
-    newCycle.setUserPin(currentPin);
-    newCycle.setTotalAllowance(allowance);
-    newCycle.setStartDate(start);
-    newCycle.setEndDate(end);
-
-    boolean saved = cycleDAO.saveNewCycle(newCycle, currentPin);
-    if (saved) {
-        this.currentCycle = newCycle;
-        this.expenses.clear();
-        return "success";
+    public double getTotalSpent() {
+        if (currentCycle == null) return 0;
+        return currentCycle.getTotalAllowance() - getRemainingBudget();
     }
-    
-    return "db_error";
-}
-
-    public BudgetCycle getCurrentCycle() { return currentCycle; }
-    public List<Expense> getExpenses()   { return expenses; }
 
     public double getRemainingBudget() {
         if (currentCycle == null) return 0;
@@ -148,27 +144,22 @@ public String startCycle(double allowance, Date start, Date end) {
         return getExpenseRejectionReason(amount) == null;
     }
 
+    public String getExpenseRejectionReason(double amount) {
+        if (currentCycle == null) return "no_cycle";
+        
+        double totalRemaining = currentCycle.getTotalAllowance() - getTotalSpent();
+        if (amount > totalRemaining) {
+            return "total_budget_exhausted";
+        }
 
+        double dailyLimit = getFixedDailyLimit();
+        double todaySpent = getDailySpent();
+        if (dailyLimit > 0 && (todaySpent + amount) > dailyLimit) {
+            return "daily_limit_exceeded";
+        }
 
-public String getExpenseRejectionReason(double amount) {
-    if (currentCycle == null) return "no_cycle";
-    
-    double totalRemaining = currentCycle.getTotalAllowance() - getTotalSpent();
-    if (amount > totalRemaining) {
-        return "total_budget_exhausted";
+        return null;
     }
-
-    // ADD THIS: block if today's spending would exceed the daily limit
-    double dailyLimit = getFixedDailyLimit();
-    double todaySpent = getDailySpent();
-    if (dailyLimit > 0 && (todaySpent + amount) > dailyLimit) {
-        return "daily_limit_exceeded";
-    }
-
-    return null;
-}
-
-  
 
     public double getDailySpent() {
         double todayTotal = 0;
@@ -184,9 +175,6 @@ public String getExpenseRejectionReason(double amount) {
         double spent = currentCycle.getTotalAllowance() - getRemainingBudget();
         return (spent / currentCycle.getTotalAllowance()) * 100;
     }
-
-    
-
 
     public Map<String, Double> getPieChartData() {
         Map<String, Double> data = new HashMap<>();
@@ -210,41 +198,30 @@ public String getExpenseRejectionReason(double amount) {
         }
     }
 
+    public void refreshBudgetState() {
+        if (currentCycle != null) {
+            currentCycle.calculateRemainingBalance(this.expenses);
+        }
+    }
 
-private boolean isSameDay(Date d1, Date d2) {
-    if (d1 == null || d2 == null) return false;
-    
-    java.time.LocalDate date1 = new java.sql.Date(d1.getTime()).toLocalDate();
-    java.time.LocalDate date2 = new java.sql.Date(d2.getTime()).toLocalDate();
-    
-    return date1.equals(date2);
-}
-    // Inside BudgetManager.java
+    public void addExpense(Expense exp) {
+        this.expenses.add(exp);
+        
+        double totalSpent = getTotalSpent();
+        double totalAllowance = currentCycle.getTotalAllowance();
+        double todaySpent = getDailySpent();
+        double dailyLimit = getFixedDailyLimit();
 
-public void refreshBudgetState() {
-    if (currentCycle != null) {
-        // Recalculate the balance using the current list of expenses
-        currentCycle.calculateRemainingBalance(this.expenses);
+        alertManager.monitorBudgetTotalSpent(totalSpent, totalAllowance);
+        alertManager.monitorDailyLimit(todaySpent, dailyLimit);
+    }
+
+    private boolean isSameDay(Date d1, Date d2) {
+        if (d1 == null || d2 == null) return false;
+        
+        java.time.LocalDate date1 = new java.sql.Date(d1.getTime()).toLocalDate();
+        java.time.LocalDate date2 = new java.sql.Date(d2.getTime()).toLocalDate();
+        
+        return date1.equals(date2);
     }
 }
-
-// Update your add method (or wherever expenses are added)
-
-
-public void addExpense(Expense exp) {
-    this.expenses.add(exp);
-    
-    // Refresh calculations
-    double totalSpent = getTotalSpent();
-    double totalAllowance = currentCycle.getTotalAllowance();
-    double todaySpent = getDailySpent();
-    double dailyLimit = getFixedDailyLimit();
-
-    // Trigger Monitoring for 80% and 100% thresholds
-    alertManager.monitorBudgetTotalSpent(totalSpent, totalAllowance);
-    alertManager.monitorDailyLimit(todaySpent, dailyLimit);
-}
-
-}
-
-

@@ -2,7 +2,7 @@ package Controllers;
 
 import Models.Expense;
 import Models.BudgetCycle;
-import Models.Category;  // NEW
+import Models.Category;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -22,7 +22,6 @@ public class ReportController {
         if (expenses == null) return report;
 
         for (Expense e : expenses) {
-            // FIXED: Use Category model
             String categoryName = Category.getNameById(e.getCategoryId());
             report.put(categoryName, report.getOrDefault(categoryName, 0.0) + e.getAmount());
         }
@@ -49,6 +48,4 @@ public class ReportController {
 
         return summary.toString();
     }
-
-    // REMOVED: getCategoryName() - now uses Category.getNameById()
 }
