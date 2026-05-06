@@ -7,7 +7,7 @@ The project is structured using the **MVC Pattern** to ensure a separation of co
 
 ##  SOLID Principles Applied
 
-1. **Interface Segregation Principle (ISP)**: ENo client should be forced to depend on methods it does not use. Large interfaces should be split into smaller, more specific ones.
+1. **Interface Segregation Principle (ISP)**: No client should be forced to depend on methods it does not use. Large interfaces should be split into smaller, more specific ones.
 2. **Open/Closed Principle (OCP)**: The system is designed to be extendable. New reporting styles or categories can be added without modifying the core spending logic.
 3. **Dependency Inversion Principle (DIP)**: High-level modules like `ExpenseController` depend on the `BudgetManager` abstraction rather than hardcoded instances.
 
