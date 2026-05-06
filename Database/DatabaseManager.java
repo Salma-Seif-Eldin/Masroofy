@@ -13,10 +13,10 @@ public class DatabaseManager {
             Class.forName("org.sqlite.JDBC");
             return DriverManager.getConnection("jdbc:sqlite:" + DB_NAME);
         } catch (ClassNotFoundException e) {
-            System.err.println("❌ SQLite JDBC driver not found! Add sqlite-jdbc JAR to Libraries.");
+            System.err.println(" SQLite JDBC driver not found! Add sqlite-jdbc JAR to Libraries.");
             return null;
         } catch (Exception e) {
-            System.err.println("❌ Connection error: " + e.getMessage());
+            System.err.println(" Connection error: " + e.getMessage());
             return null;
         }
     }
@@ -24,11 +24,10 @@ public class DatabaseManager {
     public static void createTables() {
         Connection conn = connect();
         if (conn == null) {
-            System.err.println("❌ Cannot create tables: no database connection.");
+            System.err.println(" Cannot create tables: no database connection.");
             return;
         }
 
-        // ── NEW: one row per registered user PIN ──────────────────────────────
         String createUsersTable =
             "CREATE TABLE IF NOT EXISTS users (" +
             "pin  TEXT PRIMARY KEY NOT NULL" +
@@ -64,7 +63,6 @@ public class DatabaseManager {
             "sent_at  TEXT    NOT NULL" +
             ");";
 
-        // settings kept for backward-compat but no longer used for PIN storage
         String createSettingsTable =
             "CREATE TABLE IF NOT EXISTS settings (" +
             "key   TEXT PRIMARY KEY," +
@@ -85,9 +83,9 @@ public class DatabaseManager {
             stmt.execute(createAlertsTable);
             stmt.execute(createSettingsTable);
             stmt.execute(createCategoriesTable);
-            System.out.println("✅ All tables are ready.");
+            System.out.println(" All tables are ready.");
         } catch (Exception e) {
-            System.err.println("❌ Error creating tables: " + e.getMessage());
+            System.err.println("Error creating tables: " + e.getMessage());
         } finally {
             try { conn.close(); } catch (Exception ignored) {}
         }

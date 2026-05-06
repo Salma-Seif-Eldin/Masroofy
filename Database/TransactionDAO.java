@@ -9,30 +9,26 @@ import java.util.List;
 
 public class TransactionDAO {
 
-    // FIX: Added user_pin to INSERT because the table schema requires it (NOT NULL)
     public boolean saveExpense(Expense expense) {
-    // Use 6 placeholders to match the 6 columns
-    String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id, user_pin) " +
-                 "VALUES (?, ?, ?, Date('now'), ?, ?)";
+        String sql = "INSERT INTO expenses (amount, category_id, notes, date, cycle_id, user_pin) " +
+                     "VALUES (?, ?, ?, Date('now'), ?, ?)";
 
-    try (Connection conn = DatabaseManager.connect();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-        
-        pstmt.setDouble(1, expense.getAmount());
-        pstmt.setInt(2, expense.getCategoryId());
-        pstmt.setString(3, expense.getNotes());
-        
-        // Use Java to format the date so it matches the parser in loadExistingBudget
-        
-        pstmt.setInt(4, expense.getCycleId());
-        pstmt.setString(5, expense.getUserPin());
-        
-        return pstmt.executeUpdate() > 0;
-    } catch (SQLException e) {
-        System.out.println("Error saving expense: " + e.getMessage());
-        return false;
+        try (Connection conn = DatabaseManager.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setDouble(1, expense.getAmount());
+            pstmt.setInt(2, expense.getCategoryId());
+            pstmt.setString(3, expense.getNotes());
+            pstmt.setInt(4, expense.getCycleId());
+            pstmt.setString(5, expense.getUserPin());
+            
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error saving expense: " + e.getMessage());
+            return false;
+        }
     }
-}
+
     public List<Expense> getAllExpenses() {
         List<Expense> list = new ArrayList<>();
         String sql = "SELECT * FROM expenses ORDER BY date DESC";
@@ -51,7 +47,6 @@ public class TransactionDAO {
 
     public List<Expense> getFilteredExpenses(int categoryID, String startDate, String endDate) {
         List<Expense> expenses = new ArrayList<>();
-        // FIX: date column is TEXT "yyyy-MM-dd", compare as text strings
         String sql = (categoryID == 0)
             ? "SELECT * FROM expenses WHERE date >= ? AND date <= ? ORDER BY date DESC"
             : "SELECT * FROM expenses WHERE category_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
@@ -77,22 +72,22 @@ public class TransactionDAO {
     }
 
     public boolean updateExpense(int id, double amount, int catId, String notes) {
-    String sql = "UPDATE expenses SET amount = ?, category_id = ?, notes = ? WHERE expense_id = ?";
-    try (Connection conn = DatabaseManager.connect();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-        
-        pstmt.setDouble(1, amount);
-        pstmt.setInt(2, catId);
-        pstmt.setString(3, notes);
-        pstmt.setInt(4, id);
-        
-        int affectedRows = pstmt.executeUpdate();
-        return affectedRows > 0;
-    } catch (SQLException e) {
-        e.printStackTrace();
-        return false;
+        String sql = "UPDATE expenses SET amount = ?, category_id = ?, notes = ? WHERE expense_id = ?";
+        try (Connection conn = DatabaseManager.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setDouble(1, amount);
+            pstmt.setInt(2, catId);
+            pstmt.setString(3, notes);
+            pstmt.setInt(4, id);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
-}
 
     public boolean deleteExpense(int id) {
         String sql = "DELETE FROM expenses WHERE expense_id = ?";
@@ -107,7 +102,6 @@ public class TransactionDAO {
         }
     }
 
-    // FIX: date is stored as TEXT "yyyy-MM-dd" — parse it correctly instead of getLong()
     private Expense mapResultSetToExpense(ResultSet rs) throws SQLException {
         Expense e = new Expense(
             rs.getDouble("amount"),

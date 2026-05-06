@@ -11,7 +11,6 @@ import java.util.List;
 public class CycleDAO {
 
     public List<Expense> getExpensesByCycle(int cycleId, String userPin) {
-        // FIX: expenses table has user_pin column, query must use it
         String sql = "SELECT * FROM expenses WHERE cycle_id = ? AND user_pin = ?";
         List<Expense> expenses = new ArrayList<>();
 
@@ -28,7 +27,6 @@ public class CycleDAO {
                 );
                 e.setExpenseId(rs.getInt("expense_id"));
                 e.setCycleId(rs.getInt("cycle_id"));
-                // FIX: date is stored as TEXT "yyyy-MM-dd", parse it properly
                 String dateStr = rs.getString("date");
                 if (dateStr != null) {
                     try {
@@ -82,7 +80,6 @@ public class CycleDAO {
                 cycle.setCycleId(rs.getInt("cycle_id"));
                 cycle.setUserPin(rs.getString("user_pin"));
                 cycle.setTotalAllowance(rs.getDouble("total_allowance"));
-                // FIX: load start_date and end_date so getDailyLimit() works correctly
                 String startStr = rs.getString("start_date");
                 String endStr = rs.getString("end_date");
                 if (startStr != null) {
