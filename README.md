@@ -6,7 +6,13 @@ The project started from a Software Requirements Specification (SRS) written by 
 
 ## Demo & Media
 
-📁 [Demo video, SDS document, UI screenshots & diagrams ](https://drive.google.com/drive/folders/1BbXQI2DvtxU3fCaDAGt4i4GCgRIOkHKy?usp=drive_link)
+📁 [ SDS document, UI screenshots & diagrams ](https://drive.google.com/drive/folders/1BbXQI2DvtxU3fCaDAGt4i4GCgRIOkHKy?usp=drive_link)
+
+
+
+[Demo video](https://github.com/user-attachments/assets/0307e8ca-89ca-4762-ae7e-5e65e0b67d64)  
+
+
 
 📄 [JavaDoc Documentation](https://salma-seif-eldin.github.io/Masroofy/)
 
