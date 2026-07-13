@@ -51,11 +51,11 @@ public class AuthActivity extends JPanel {
         gbc.gridy = 2;
         add(Box.createVerticalStrut(10), gbc);
 
-        JButton signUpBtn = createStyledButton("🆕  Sign Up  (New User)");
+        JButton signUpBtn = createStyledButton("  Sign Up  (New User)");
         gbc.gridy = 3;
         add(signUpBtn, gbc);
 
-        JButton signInBtn = createStyledButton("🔒  Sign In  (Existing User)");
+        JButton signInBtn = createStyledButton("  Sign In  (Existing User)");
         gbc.gridy = 4;
         add(signInBtn, gbc);
 

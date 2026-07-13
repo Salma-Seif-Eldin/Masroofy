@@ -76,9 +76,9 @@ public class DashboardActivity extends JPanel {
         JLabel lblChartTitle = new JLabel("Spending by Category:");
         lblChartTitle.setForeground(Color.WHITE);
 
-        JButton btnAddExpense = new JButton("➕ Add Expense");
-        JButton btnHistory    = new JButton("📋 View History");
-        JButton btnReport     = new JButton("📊 Generate Report");
+        JButton btnAddExpense = new JButton(" Add Expense");
+        JButton btnHistory    = new JButton(" View History");
+        JButton btnReport     = new JButton(" Generate Report");
 
         styleButton(btnAddExpense);
         styleButton(btnHistory);

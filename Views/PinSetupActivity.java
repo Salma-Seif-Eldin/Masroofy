@@ -58,7 +58,7 @@ public class PinSetupActivity extends JPanel {
         add(pinField, gbc);
 
         // Register button
-        saveBtn = new JButton("✅  Create Account");
+        saveBtn = new JButton("  Create Account");
         saveBtn.setBackground(new Color(212, 175, 55));
         saveBtn.setForeground(Color.BLACK);
         saveBtn.setFont(new Font("Arial", Font.BOLD, 15));
