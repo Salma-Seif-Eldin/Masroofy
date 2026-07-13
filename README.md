@@ -10,7 +10,7 @@ The project started from a Software Requirements Specification (SRS) written by 
 
 )
 
-📄 [JavaDoc Documentation](_https://github.com/dimadel660/Masroofy/tree/main/javadoc)
+📄 [JavaDoc Documentation](_https://salma-seif-eldin.github.io/Masroofy/ )
 
 ## What It Does
 
